@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>家計簿</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f5f2;
+      --surface: #ffffff;
+      --surface2: #f0ede8;
+      --border: #e4dfd8;
+      --text: #1a1714;
+      --text-sub: #8a827a;
+      --accent: #c84b2f;
+      --accent-light: #f5e8e4;
+      --husband: #2d5a8e;
+      --husband-light: #e8eff8;
+      --wife: #7a3b6e;
+      --wife-light: #f5eaf3;
+      --success: #2e7d5e;
+      --warning: #c84b2f;
+      --radius: 16px;
+      --shadow: 0 2px 16px rgba(0,0,0,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ========== LOGIN ========== */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      background: var(--bg);
+    }
+
+    .login-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 36px;
+      color: var(--text);
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+
+    .login-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-card h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: var(--text-sub);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .login-error {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--accent-light);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--accent);
+      display: none;
+    }
+
+    /* ========== APP ========== */
+    #app-screen { display: none; min-height: 100vh; padding-bottom: 80px; }
+
+    .app-header {
+      background: var(--surface);
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .app-header-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .month-nav button {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+    }
+
+    .month-label {
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 64px;
+      text-align: center;
+    }
+
+    .user-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .user-badge.husband { background: var(--husband-light); color: var(--husband); }
+    .user-badge.wife { background: var(--wife-light); color: var(--wife); }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content { padding: 20px 16px; }
+
+    /* Summary Cards */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card.husband-card { border-top: 3px solid var(--husband); }
+    .summary-card.wife-card { border-top: 3px solid var(--wife); }
+
+    .summary-card-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .summary-row .label { color: var(--text-sub); }
+
+    .summary-row .value {
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .summary-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 8px 0;
+    }
+
+    .remaining-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .remaining-label { font-size: 11px; color: var(--text-sub); }
+
+    .remaining-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .remaining-value.positive { color: var(--success); }
+    .remaining-value.negative { color: var(--warning); }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .progress-fill.husband { background: var(--husband); }
+    .progress-fill.wife { background: var(--wife); }
+    .progress-fill.over { background: var(--warning); }
+
+    /* Section */
+    .section-title {
+      font-size: 12px;
+      color: var(--text-sub);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      margin-top: 4px;
+    }
+
+    /* Recent Expenses */
+    .expense-list {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .expense-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .expense-item:last-child { border-bottom: none; }
+
+    .expense-category-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .expense-info { flex: 1; min-width: 0; }
+
+    .expense-category {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .expense-meta {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .expense-amount {
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .expense-person {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .expense-person.husband { background: var(--husband-light); color: var(--husband); }
+    .expense-person.wife { background: var(--wife-light); color: var(--wife); }
+
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 13px;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 88px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(200, 75, 47, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .fab:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 24px rgba(200, 75, 47, 0.5);
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      height: 72px;
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      color: var(--text-sub);
+      font-size: 10px;
+      transition: color 0.2s;
+      padding-bottom: 4px;
+    }
+
+    .nav-item.active { color: var(--accent); }
+
+    .nav-icon { font-size: 20px; }
+
+    /* ========== MODAL ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 300;
+      display: none;
+      align-items: flex-end;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px 20px 40px;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 0 auto 20px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .field-label {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .field-input:focus { border-color: var(--accent); }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .seg-control {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      padding: 9px 6px;
+      border: none;
+      background: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-sub);
+      transition: all 0.2s;
+    }
+
+    .seg-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
+
+    .seg-btn.husband.active { color: var(--husband); }
+    .seg-btn.wife.active { color: var(--wife); }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .cat-btn {
+      padding: 10px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    .cat-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-cancel {
+      width: 100%;
+      padding: 12px;
+      background: none;
+      color: var(--text-sub);
+      border: none;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--text-sub);
+      font-size: 13px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 999;
+      opacity: 0;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .logout-btn {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+      cursor: pointer;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">家計簿</div>
+  <div class="login-sub">household budget</div>
+  <div class="login-card">
+    <h2>ログイン</h2>
+    <div class="form-group">
+      <label>メールアドレス</label>
+      <input type="email" id="login-email" placeholder="mail@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="app-header">
+    <div class="app-header-logo">家計簿</div>
+    <div class="header-right">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <div class="month-label" id="month-label"></div>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+      <span class="user-badge" id="user-badge"></span>
+      <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Summary -->
+    <div class="section-title">今月の収支</div>
+    <div class="summary-grid">
+      <div class="summary-card husband-card" id="husband-card">
+        <div class="loading">読み込み中...</div>
+      </div>
+      <div class="summary-card wife-card" id="wife-card">
+        <div class="loading">読み込み中...</div>
+      </div>
+    </div>
+
+    <!-- Recent -->
+    <div class="section-title">最近の支出</div>
+    <div class="expense-list" id="expense-list">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openExpenseModal()">＋</button>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showTab('dashboard')">
+      <span class="nav-icon">🏠</span>
+      ホーム
+    </button>
+    <button class="nav-item" onclick="showTab('expenses')">
+      <span class="nav-icon">📋</span>
+      支出一覧
+    </button>
+    <button class="nav-item" onclick="showTab('income')">
+      <span class="nav-icon">💰</span>
+      収入
+    </button>
+    <button class="nav-item" onclick="showTab('fixed')">
+      <span class="nav-icon">🔁</span>
+      固定費
+    </button>
+  </nav>
+</div>
+
+<!-- 支出登録モーダル -->
+<div class="modal-overlay" id="expense-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">支出を登録</div>
+
+    <label class="field-label">金額</label>
+    <input type="number" class="field-input" id="exp-amount" placeholder="0" inputmode="numeric">
+
+    <label class="field-label">日付</label>
+    <input type="date" class="field-input" id="exp-date">
+
+    <label class="field-label">支出者</label>
+    <div class="seg-control">
+      <button class="seg-btn husband active" id="seg-husband" onclick="selectPerson('husband')">夫</button>
+      <button class="seg-btn wife" id="seg-wife" onclick="selectPerson('wife')">妻</button>
+    </div>
+
+    <label class="field-label">財布区分</label>
+    <div class="seg-control">
+      <button class="seg-btn active" id="seg-salary" onclick="selectWallet('salary')">月給</button>
+      <button class="seg-btn" id="seg-bonus" onclick="selectBonus('bonus')">ボーナス</button>
+    </div>
+
+    <label class="field-label">費目</label>
+    <div class="category-grid" id="category-grid"></div>
+
+    <label class="field-label">メモ（任意）</label>
+    <input type="text" class="field-input" id="exp-memo" placeholder="例：スーパー、薬局など">
+
+    <button class="btn-submit" id="expense-submit-btn" onclick="submitExpense()">登録する</button>
+    <button class="btn-cancel" onclick="closeExpenseModal()">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkw1ZOMeJDP8TMW04JH_EUjD6WE9qxkNU",
+    authDomain: "child-tracker-2a36c.firebaseapp.com",
+    databaseURL: "https://child-tracker-2a36c-default-rtdb.firebaseio.com",
+    projectId: "child-tracker-2a36c",
+    storageBucket: "child-tracker-2a36c.firebasestorage.app",
+    messagingSenderId: "104834828543",
+    appId: "1:104834828543:web:d1f0f88ee30018d28024ca",
+    measurementId: "G-BBVSJLVJLD"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const CATEGORIES = [
+    "食費","外食","日用品","交通費","医療費","趣味",
+    "悠グッズ","モココグッズ","美容代","自宅改善","小遣い","ふるさと納税",
+    "特別出費","保険料","衣服","レジャー","教育費","住居費",
+    "通信費","貯蓄","光熱費","車維持費","帰省費"
+  ];
+
+  // State
+  let currentUser = null;
+  let currentPerson = 'husband';
+  let currentWallet = 'salary';
+  let selectedCategory = null;
+  let currentDate = new Date();
+  let viewYear = currentDate.getFullYear();
+  let viewMonth = currentDate.getMonth() + 1;
+
+  // expose to global
+  window.doLogin = async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-error');
+    btn.disabled = true;
+    btn.textContent = 'ログイン中...';
+    err.style.display = 'none';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.style.display = 'block';
+      err.textContent = 'メールアドレスかパスワードが違います';
+      btn.disabled = false;
+      btn.textContent = 'ログイン';
+    }
+  };
+
+  window.doLogout = () => signOut(auth);
+
+  window.changeMonth = (dir) => {
+    viewMonth += dir;
+    if (viewMonth > 12) { viewMonth = 1; viewYear++; }
+    if (viewMonth < 1) { viewMonth = 12; viewYear--; }
+    updateMonthLabel();
+    loadDashboard();
+  };
+
+  window.showTab = (tab) => {
+    document.querySelectorAll('.nav-item').forEach((el, i) => {
+      el.classList.toggle('active', ['dashboard','expenses','income','fixed'][i] === tab);
+    });
+    if (tab === 'dashboard') loadDashboard();
+    else showToast('このタブは近日実装予定です');
+  };
+
+  window.openExpenseModal = () => {
+    buildCategoryGrid();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('exp-date').value = today;
+    document.getElementById('exp-amount').value = '';
+    document.getElementById('exp-memo').value = '';
+    selectedCategory = null;
+    document.getElementById('expense-modal').classList.add('open');
+  };
+
+  window.closeExpenseModal = () => {
+    document.getElementById('expense-modal').classList.remove('open');
+  };
+
+  window.selectPerson = (person) => {
+    currentPerson = person;
+    document.getElementById('seg-husband').classList.toggle('active', person === 'husband');
+    document.getElementById('seg-wife').classList.toggle('active', person === 'wife');
+  };
+
+  window.selectWallet = (wallet) => {
+    currentWallet = 'salary';
+    document.getElementById('seg-salary').classList.add('active');
+    document.getElementById('seg-bonus').classList.remove('active');
+  };
+
+  window.selectBonus = () => {
+    currentWallet = 'bonus';
+    document.getElementById('seg-salary').classList.remove('active');
+    document.getElementById('seg-bonus').classList.add('active');
+  };
+
+  window.submitExpense = async () => {
+    const amount = parseInt(document.getElementById('exp-amount').value);
+    const date = document.getElementById('exp-date').value;
+    const memo = document.getElementById('exp-memo').value;
+    if (!amount || amount <= 0) { showToast('金額を入力してください'); return; }
+    if (!selectedCategory) { showToast('費目を選んでください'); return; }
+    const btn = document.getElementById('expense-submit-btn');
+    btn.disabled = true;
+    btn.textContent = '登録中...';
+    try {
+      await addDoc(collection(db, 'kakeibo_expenses'), {
+        amount,
+        date: Timestamp.fromDate(new Date(date)),
+        category: selectedCategory,
+        person: currentPerson,
+        walletType: currentWallet,
+        memo,
+        isFixed: false,
+        createdBy: currentUser.uid,
+        createdAt: Timestamp.now()
+      });
+      closeExpenseModal();
+      showToast('登録しました！');
+      loadDashboard();
+    } catch(e) {
+      showToast('エラーが発生しました');
+    }
+    btn.disabled = false;
+    btn.textContent = '登録する';
+  };
+
+  function buildCategoryGrid() {
+    const grid = document.getElementById('category-grid');
+    grid.innerHTML = CATEGORIES.map(cat => `
+      <button class="cat-btn" onclick="selectCategory('${cat}')" id="cat-${cat}">${cat}</button>
+    `).join('');
+  }
+
+  window.selectCategory = (cat) => {
+    selectedCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`cat-${cat}`).classList.add('active');
+  };
+
+  function updateMonthLabel() {
+    document.getElementById('month-label').textContent = `${viewYear}/${String(viewMonth).padStart(2,'0')}`;
+  }
+
+  async function loadDashboard() {
+    await Promise.all([loadSummary(), loadRecentExpenses()]);
+  }
+
+  async function loadSummary() {
+    const yearMonth = `${viewYear}-${String(viewMonth).padStart(2,'0')}`;
+
+    // Load incomes
+    const incomeSnap = await getDocs(query(
+      collection(db, 'kakeibo_incomes'),
+      where('yearMonth', '==', yearMonth)
+    ));
+    const incomes = { husband: { salary: 0, bonus: 0 }, wife: { salary: 0, bonus: 0 } };
+    incomeSnap.forEach(d => {
+      const { person, walletType, amount } = d.data();
+      if (incomes[person]) incomes[person][walletType] = (incomes[person][walletType] || 0) + amount;
+    });
+
+    // Load expenses for this month
+    const startDate = new Date(viewYear, viewMonth - 1, 1);
+    const endDate = new Date(viewYear, viewMonth, 1);
+    const expSnap = await getDocs(query(
+      collection(db, 'kakeibo_expenses'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<', Timestamp.fromDate(endDate))
+    ));
+    const expenses = { husband: { salary: 0, bonus: 0 }, wife: { salary: 0, bonus: 0 } };
+    expSnap.forEach(d => {
+      const { person, walletType, amount } = d.data();
+      if (expenses[person]) expenses[person][walletType] = (expenses[person][walletType] || 0) + amount;
+    });
+
+    renderPersonCard('husband-card', '夫', 'husband', incomes.husband, expenses.husband);
+    renderPersonCard('wife-card', '妻', 'wife', incomes.wife, expenses.wife);
+  }
+
+  function renderPersonCard(cardId, label, cls, income, expense) {
+    const card = document.getElementById(cardId);
+    const totalIncome = income.salary + income.bonus;
+    const totalExpense = expense.salary + expense.bonus;
+    const remaining = totalIncome - totalExpense;
+    const pct = totalIncome > 0 ? Math.min((totalExpense / totalIncome) * 100, 100) : 0;
+    const overBudget = remaining < 0;
+
+    card.innerHTML = `
+      <div class="summary-card-label">${label}</div>
+      ${income.salary > 0 ? `<div class="summary-row"><span class="label">月給</span><span class="value">¥${fmt(income.salary)}</span></div>` : ''}
+      ${income.bonus > 0 ? `<div class="summary-row"><span class="label">ボーナス</span><span class="value">¥${fmt(income.bonus)}</span></div>` : ''}
+      ${totalIncome === 0 ? `<div class="summary-row"><span class="label">収入未登録</span></div>` : ''}
+      <hr class="summary-divider">
+      <div class="summary-row"><span class="label">支出</span><span class="value" style="color:var(--accent)">¥${fmt(totalExpense)}</span></div>
+      <div class="remaining-row">
+        <span class="remaining-label">残り</span>
+        <span class="remaining-value ${overBudget ? 'negative' : 'positive'}">¥${fmt(Math.abs(remaining))}${overBudget ? ' オーバー' : ''}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${overBudget ? 'over' : cls}" style="width:${pct}%"></div>
+      </div>
+    `;
+  }
+
+  async function loadRecentExpenses() {
+    const list = document.getElementById('expense-list');
+    const startDate = new Date(viewYear, viewMonth - 1, 1);
+    const endDate = new Date(viewYear, viewMonth, 1);
+
+    const snap = await getDocs(query(
+      collection(db, 'kakeibo_expenses'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<', Timestamp.fromDate(endDate)),
+      orderBy('date', 'desc'),
+      limit(10)
+    ));
+
+    if (snap.empty) {
+      list.innerHTML = '<div class="empty-state">この月の支出はまだありません</div>';
+      return;
+    }
+
+    list.innerHTML = snap.docs.map(d => {
+      const { amount, category, person, date, memo } = d.data();
+      const dateStr = date.toDate().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+      const personLabel = person === 'husband' ? '夫' : '妻';
+      return `
+        <div class="expense-item">
+          <div class="expense-category-dot" style="background: ${person === 'husband' ? 'var(--husband)' : 'var(--wife)'}"></div>
+          <div class="expense-info">
+            <div class="expense-category">${category}</div>
+            <div class="expense-meta">${dateStr}${memo ? ' · ' + memo : ''}</div>
+          </div>
+          <span class="expense-person ${person}">${personLabel}</span>
+          <div class="expense-amount">¥${fmt(amount)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function fmt(n) {
+    return Number(n).toLocaleString('ja-JP');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Auth state
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      // Set user badge
+      const badge = document.getElementById('user-badge');
+      // Simple heuristic: display name or email
+      badge.textContent = user.displayName || user.email.split('@')[0];
+      updateMonthLabel();
+      loadDashboard();
+    } else {
+      currentUser = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+    }
+  });
+
+  // Enter key login
+  document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.doLogin();
+  });
+</script>
+</body>
+</html>
