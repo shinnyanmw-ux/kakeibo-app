@@ -8,16 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #F7F5F2;
-      --surface: #FFFFFF;
-      --primary: #2D5016;
-      --primary-light: #4A7C2F;
-      --accent: #C8A96E;
-      --text: #1A1A1A;
-      --text-muted: #888880;
-      --border: #E8E4DE;
-      --error: #C0392B;
-      --shadow: 0 2px 24px rgba(0,0,0,0.07);
+      --bg: #F7F5F2; --surface: #FFFFFF; --primary: #2D5016; --primary-light: #4A7C2F;
+      --accent: #C8A96E; --text: #1A1A1A; --text-muted: #888880; --border: #E8E4DE;
+      --error: #C0392B; --bonus: #7B4F1A; --bonus-bg: #FFF8F0; --shadow: 0 2px 24px rgba(0,0,0,0.07);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
@@ -35,9 +28,9 @@
     .app-header h1 { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--primary); }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .user-badge { font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); }
-    .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; font-size: 18px; color: var(--text-muted); transition: background 0.2s; line-height: 1; }
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; font-size: 18px; color: var(--text-muted); line-height: 1; }
     .btn-icon:hover { background: var(--border); }
-    .btn-logout { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
+    .btn-logout { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
     .btn-logout:hover { background: var(--border); }
 
     .page { display: none; flex: 1; padding: 20px 16px 100px; max-width: 480px; margin: 0 auto; width: 100%; }
@@ -68,14 +61,18 @@
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .section-header h2 { font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
 
+    /* Expense list */
     .expense-list { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
-    .expense-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+    .expense-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 12px; cursor: pointer; transition: background 0.15s; }
     .expense-item:last-child { border-bottom: none; }
+    .expense-item:hover { background: #fafaf8; }
+    .expense-item:active { background: #f0ede8; }
     .expense-category-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
     .expense-info { flex: 1; min-width: 0; }
     .expense-info .expense-category { font-size: 14px; font-weight: 500; }
     .expense-info .expense-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .expense-amount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
+    .expense-chevron { font-size: 14px; color: var(--border); flex-shrink: 0; margin-left: 4px; }
     .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.8; }
 
     /* Income */
@@ -85,31 +82,36 @@
     .income-card .ic-type { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
     .income-card .ic-amount { font-size: 20px; font-weight: 700; }
 
-    /* Fixed expenses page */
+    /* Fixed page */
     .fixed-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .fixed-total-card { background: var(--surface); border-radius: 16px; padding: 16px; border: 1px solid var(--border); }
     .fixed-total-card .ftc-person { font-size: 12px; font-weight: 500; color: var(--primary); margin-bottom: 4px; }
     .fixed-total-card .ftc-label { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
-    .fixed-total-card .ftc-amount { font-size: 20px; font-weight: 700; color: var(--text); }
+    .fixed-total-card .ftc-amount { font-size: 20px; font-weight: 700; }
     .fixed-total-card .ftc-count { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
     .fixed-group { margin-bottom: 20px; }
     .fixed-group-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px; }
     .fixed-group-header .fgh-label { font-size: 12px; font-weight: 500; color: var(--primary); }
-    .fixed-group-header .fgh-total { font-size: 12px; font-weight: 700; color: var(--text); }
-
+    .fixed-group-header .fgh-total { font-size: 12px; font-weight: 700; }
     .fixed-list { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
     .fixed-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 10px; }
     .fixed-item:last-child { border-bottom: none; }
+    .fixed-item.is-bonus { background: var(--bonus-bg); }
     .fixed-info { flex: 1; min-width: 0; }
     .fixed-info .fixed-name { font-size: 14px; font-weight: 500; }
     .fixed-info .fixed-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .fixed-variable-badge { font-size: 10px; background: #FFF3E0; color: #E65100; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+    .fixed-bonus-badge { font-size: 10px; background: var(--bonus-bg); color: var(--bonus); padding: 2px 6px; border-radius: 4px; flex-shrink: 0; border: 1px solid #e8c99a; }
     .fixed-amount { font-size: 15px; font-weight: 700; flex-shrink: 0; }
     .btn-edit { background: none; border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s; }
     .btn-edit:hover { border-color: var(--primary); color: var(--primary); }
     .btn-delete { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; flex-shrink: 0; }
     .btn-delete:hover { color: var(--error); }
+
+    /* wallet hint */
+    .wallet-hint { font-size: 12px; padding: 10px 14px; border-radius: 8px; margin-top: -8px; margin-bottom: 16px; line-height: 1.6; }
+    .wallet-hint.salary { background: #f0f5ec; color: var(--primary); }
+    .wallet-hint.bonus { background: var(--bonus-bg); color: var(--bonus); }
 
     /* Settings */
     .settings-section { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
@@ -129,7 +131,7 @@
     .nav-item.active { color: var(--primary); }
     .nav-item .nav-icon { font-size: 20px; }
 
-    .fab { position: fixed; bottom: 76px; right: 20px; width: 56px; height: 56px; background: var(--primary); color: #fff; border: none; border-radius: 50%; font-size: 28px; cursor: pointer; box-shadow: 0 4px 16px rgba(45,80,22,0.35); display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s; z-index: 99; }
+    .fab { position: fixed; bottom: 76px; right: 20px; width: 56px; height: 56px; background: var(--primary); color: #fff; border: none; border-radius: 50%; font-size: 28px; cursor: pointer; box-shadow: 0 4px 16px rgba(45,80,22,0.35); display: flex; align-items: center; justify-content: center; transition: transform 0.2s; z-index: 99; }
     .fab:hover { background: var(--primary-light); transform: scale(1.05); }
 
     .form-group { margin-bottom: 16px; }
@@ -160,6 +162,7 @@
     .toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
     .page-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+    .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   </style>
 </head>
 <body>
@@ -251,8 +254,6 @@
   <!-- 固定費 -->
   <div class="page" id="page-fixed">
     <div class="page-title">固定費マスター</div>
-
-    <!-- 合計カード -->
     <div class="fixed-totals">
       <div class="fixed-total-card">
         <div class="ftc-person">👔 夫</div>
@@ -267,16 +268,12 @@
         <div class="ftc-count" id="fixed-count-wife">0件</div>
       </div>
     </div>
-
-    <!-- 夫の固定費 -->
     <div class="fixed-group" id="fixed-group-husband"></div>
-    <!-- 妻の固定費 -->
     <div class="fixed-group" id="fixed-group-wife"></div>
-
     <button class="btn-add-income" onclick="openFixedModal(null)">＋ 固定費を追加</button>
     <div class="hint-box">
-      💡 登録した固定費は毎月<span id="hint-payday">25</span>日に自動で支出として計上されます。<br>
-      変動費（電気代など）は目安金額で登録し、実際の金額が来たら支出一覧から修正できます。<br>
+      💡 <strong>月給分</strong>は毎月<span id="hint-payday">25</span>日に計上されます。<br>
+      💰 <strong>ボーナス分</strong>は<span id="hint-bonus1">6月10日</span>と<span id="hint-bonus2">12月20日</span>に計上されます。<br>
       計上日は設定画面から変更できます。
     </div>
   </div>
@@ -284,14 +281,31 @@
   <!-- 設定 -->
   <div class="page" id="page-settings">
     <div class="page-title">設定</div>
-    <div class="settings-section-title">固定費・支給日</div>
+    <div class="settings-section-title">月給・支給日</div>
     <div class="settings-section">
       <div class="settings-row">
         <div>
-          <div class="settings-row-label">固定費の計上日（支給日）</div>
-          <div class="settings-row-desc">毎月この日に固定費が自動計上されます</div>
+          <div class="settings-row-label">月給の固定費計上日</div>
+          <div class="settings-row-desc">毎月この日に月給分の固定費が計上されます</div>
         </div>
         <button class="settings-value" id="payday-display" onclick="openPaydayModal()">25日</button>
+      </div>
+    </div>
+    <div class="settings-section-title">ボーナス・支給日</div>
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">ボーナス1回目（夏）</div>
+          <div class="settings-row-desc">ボーナス分の固定費が計上されます</div>
+        </div>
+        <button class="settings-value" id="bonus1-display" onclick="openBonusModal(1)">6月10日</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">ボーナス2回目（冬）</div>
+          <div class="settings-row-desc">ボーナス分の固定費が計上されます</div>
+        </div>
+        <button class="settings-value" id="bonus2-display" onclick="openBonusModal(2)">12月20日</button>
       </div>
     </div>
     <div class="settings-section-title">アカウント</div>
@@ -319,20 +333,21 @@
   </nav>
 </div>
 
-<!-- 支出登録モーダル -->
+<!-- 支出登録・編集モーダル -->
 <div class="modal-overlay" id="expense-modal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>支出を登録</h2>
+    <h2 id="expense-modal-title">支出を登録</h2>
+    <input type="hidden" id="expense-edit-id">
     <div class="form-group"><label>金額</label><input type="number" id="expense-amount" placeholder="0" inputmode="numeric"></div>
     <div class="form-group"><label>費目</label><select id="expense-category"><option value="">選択してください</option></select></div>
     <div class="form-group"><label>支出者</label><select id="expense-person"><option value="husband">夫</option><option value="wife">妻</option></select></div>
     <div class="form-group"><label>財布区分</label><select id="expense-wallet"><option value="salary">月給</option><option value="bonus">ボーナス</option></select></div>
     <div class="form-group"><label>日付</label><input type="date" id="expense-date"></div>
     <div class="form-group"><label>メモ（任意）</label><textarea id="expense-memo" placeholder="店名など"></textarea></div>
-    <div class="modal-actions">
+    <div class="modal-actions" id="expense-modal-actions">
       <button class="btn-secondary" onclick="closeModal('expense-modal')">キャンセル</button>
-      <button class="btn-primary" style="flex:2" onclick="saveExpense()">登録する</button>
+      <button class="btn-primary" style="flex:2" id="expense-save-btn" onclick="saveExpense()">登録する</button>
     </div>
   </div>
 </div>
@@ -362,29 +377,40 @@
     <div class="form-group"><label>名称</label><input type="text" id="fixed-name" placeholder="例：家賃、Netflix"></div>
     <div class="form-group"><label>費目</label><select id="fixed-category"><option value="">選択してください</option></select></div>
     <div class="form-group"><label>支出者</label><select id="fixed-person"><option value="husband">夫</option><option value="wife">妻</option></select></div>
-    <div class="form-group"><label>財布区分</label><select id="fixed-wallet"><option value="salary">月給</option><option value="bonus">ボーナス</option></select></div>
+    <div class="form-group">
+      <label>財布区分</label>
+      <select id="fixed-wallet" onchange="onWalletChange()">
+        <option value="salary">月給</option>
+        <option value="bonus">ボーナス</option>
+      </select>
+    </div>
+    <div id="salary-repeat-section">
+      <div class="wallet-hint salary">📅 毎月<span id="modal-payday">25</span>日に計上されます</div>
+      <div class="form-group"><label>金額タイプ</label>
+        <select id="fixed-amount-type"><option value="fixed">固定（毎月同じ）</option><option value="variable">変動（目安金額）</option></select>
+      </div>
+      <div class="form-group"><label>繰り返し</label>
+        <select id="fixed-repeat" onchange="toggleTargetMonth()">
+          <option value="monthly">毎月</option><option value="yearly">年1回</option>
+        </select>
+      </div>
+      <div class="form-group" id="target-month-group" style="display:none">
+        <label>対象月</label>
+        <select id="fixed-target-month">
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+    </div>
+    <div id="bonus-repeat-section" style="display:none">
+      <div class="wallet-hint bonus">💰 <span id="modal-bonus1">6月10日</span>と<span id="modal-bonus2">12月20日</span>に計上されます</div>
+      <div class="form-group"><label>金額タイプ</label>
+        <select id="fixed-amount-type-bonus"><option value="fixed">固定（毎回同じ）</option><option value="variable">変動（目安金額）</option></select>
+      </div>
+    </div>
     <div class="form-group"><label>金額</label><input type="number" id="fixed-amount" placeholder="0" inputmode="numeric"></div>
-    <div class="form-group"><label>金額タイプ</label>
-      <select id="fixed-amount-type">
-        <option value="fixed">固定（毎月同じ）</option>
-        <option value="variable">変動（目安金額）</option>
-      </select>
-    </div>
-    <div class="form-group"><label>繰り返し</label>
-      <select id="fixed-repeat" onchange="toggleTargetMonth()">
-        <option value="monthly">毎月</option>
-        <option value="yearly">年1回</option>
-      </select>
-    </div>
-    <div class="form-group" id="target-month-group" style="display:none">
-      <label>対象月</label>
-      <select id="fixed-target-month">
-        <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
-        <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
-        <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
-        <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-      </select>
-    </div>
     <div class="modal-actions" id="fixed-modal-actions">
       <button class="btn-secondary" onclick="closeModal('fixed-modal')">キャンセル</button>
       <button class="btn-primary" style="flex:2" id="fixed-save-btn" onclick="saveFixed()">登録する</button>
@@ -392,20 +418,35 @@
   </div>
 </div>
 
-<!-- 支給日設定モーダル -->
+<!-- 月給計上日モーダル -->
 <div class="modal-overlay" id="payday-modal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>固定費の計上日（支給日）</h2>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.8;">毎月この日に固定費マスターの内容が自動で支出として計上されます。</p>
-    <div class="form-group">
-      <label>計上日（1〜28）</label>
-      <input type="number" id="payday-input" min="1" max="28" inputmode="numeric">
-    </div>
-    <p style="font-size:11px;color:var(--text-muted);margin-top:-8px;margin-bottom:16px;">※ 月によって日数が異なるため、最大28日までに設定してください</p>
+    <h2>月給の計上日</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.8;">毎月この日に月給分の固定費が計上されます。</p>
+    <div class="form-group"><label>計上日（1〜28）</label><input type="number" id="payday-input" min="1" max="28" inputmode="numeric"></div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:-8px;margin-bottom:16px;">※ 月によって日数が異なるため、最大28日まで設定してください</p>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('payday-modal')">キャンセル</button>
       <button class="btn-primary" style="flex:2" onclick="savePayday()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ボーナス計上日モーダル -->
+<div class="modal-overlay" id="bonus-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="bonus-modal-title">ボーナス1回目の計上日</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.8;">ボーナス分の固定費が計上される日を設定してください。</p>
+    <input type="hidden" id="bonus-modal-index">
+    <div class="inline-grid">
+      <div class="form-group"><label>月（1〜12）</label><input type="number" id="bonus-month-input" min="1" max="12" inputmode="numeric"></div>
+      <div class="form-group"><label>日（1〜28）</label><input type="number" id="bonus-day-input" min="1" max="28" inputmode="numeric"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('bonus-modal')">キャンセル</button>
+      <button class="btn-primary" style="flex:2" onclick="saveBonusDate()">保存する</button>
     </div>
   </div>
 </div>
@@ -440,6 +481,8 @@
   let currentMonth = new Date().getMonth() + 1;
   let currentTab = 'home';
   let payday = 25;
+  let bonus1 = { month: 6, day: 10 };
+  let bonus2 = { month: 12, day: 20 };
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -471,21 +514,34 @@
   async function loadSettings() {
     try {
       const snap = await getDoc(doc(db,'kakeibo_settings','general'));
-      if (snap.exists()) payday = snap.data().payday || 25;
-    } catch(e) { payday = 25; }
-    updatePaydayDisplay();
+      if (snap.exists()) {
+        const d = snap.data();
+        payday = d.payday || 25;
+        bonus1 = d.bonus1 || { month: 6, day: 10 };
+        bonus2 = d.bonus2 || { month: 12, day: 20 };
+      }
+    } catch(e) {}
+    updateAllSettingsDisplay();
   }
 
-  function updatePaydayDisplay() {
+  function updateAllSettingsDisplay() {
     document.getElementById('payday-display').textContent = `${payday}日`;
     document.getElementById('hint-payday').textContent = payday;
+    document.getElementById('modal-payday').textContent = payday;
+    const b1str = `${bonus1.month}月${bonus1.day}日`;
+    const b2str = `${bonus2.month}月${bonus2.day}日`;
+    document.getElementById('bonus1-display').textContent = b1str;
+    document.getElementById('bonus2-display').textContent = b2str;
+    document.getElementById('hint-bonus1').textContent = b1str;
+    document.getElementById('hint-bonus2').textContent = b2str;
+    document.getElementById('modal-bonus1').textContent = b1str;
+    document.getElementById('modal-bonus2').textContent = b2str;
   }
 
   window.openPaydayModal = () => {
     document.getElementById('payday-input').value = payday;
     document.getElementById('payday-modal').classList.add('open');
   };
-
   window.savePayday = async () => {
     const val = parseInt(document.getElementById('payday-input').value);
     if (!val || val < 1 || val > 28) { showToast('1〜28の数字を入力してください'); return; }
@@ -493,8 +549,34 @@
     btn.disabled = true; btn.textContent = '保存中...';
     try {
       await setDoc(doc(db,'kakeibo_settings','general'), { payday: val }, { merge: true });
-      payday = val; updatePaydayDisplay(); closeModal('payday-modal');
-      showToast(`✅ 計上日を${val}日に変更しました`);
+      payday = val; updateAllSettingsDisplay();
+      closeModal('payday-modal'); showToast(`✅ 月給計上日を${val}日に変更しました`);
+    } catch(e) { showToast('保存に失敗しました'); }
+    finally { btn.disabled = false; btn.textContent = '保存する'; }
+  };
+
+  window.openBonusModal = (index) => {
+    document.getElementById('bonus-modal-index').value = index;
+    document.getElementById('bonus-modal-title').textContent = `ボーナス${index}回目の計上日`;
+    const b = index === 1 ? bonus1 : bonus2;
+    document.getElementById('bonus-month-input').value = b.month;
+    document.getElementById('bonus-day-input').value = b.day;
+    document.getElementById('bonus-modal').classList.add('open');
+  };
+  window.saveBonusDate = async () => {
+    const index = parseInt(document.getElementById('bonus-modal-index').value);
+    const month = parseInt(document.getElementById('bonus-month-input').value);
+    const day = parseInt(document.getElementById('bonus-day-input').value);
+    if (!month || month < 1 || month > 12) { showToast('月は1〜12で入力してください'); return; }
+    if (!day || day < 1 || day > 28) { showToast('日は1〜28で入力してください'); return; }
+    const btn = document.querySelector('#bonus-modal .btn-primary');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      const key = index === 1 ? 'bonus1' : 'bonus2';
+      await setDoc(doc(db,'kakeibo_settings','general'), { [key]: { month, day } }, { merge: true });
+      if (index === 1) bonus1 = { month, day }; else bonus2 = { month, day };
+      updateAllSettingsDisplay();
+      closeModal('bonus-modal'); showToast(`✅ ボーナス${index}回目を${month}月${day}日に変更しました`);
     } catch(e) { showToast('保存に失敗しました'); }
     finally { btn.disabled = false; btn.textContent = '保存する'; }
   };
@@ -529,7 +611,7 @@
     loadAll();
   };
 
-  window.handleFab = () => { if (currentTab==='income') openIncomeModal(); else openExpenseModal(); };
+  window.handleFab = () => { if (currentTab==='income') openIncomeModal(); else openExpenseModal(null); };
 
   async function loadAll() {
     if (currentTab !== 'settings') await loadDashboard();
@@ -555,7 +637,7 @@
     const sorted = [];
     expenseSnap.forEach(d => sorted.push({id:d.id,...d.data()}));
     sorted.sort((a,b) => b.date.seconds-a.date.seconds);
-    renderExpenseList('expense-list', sorted.slice(0,10));
+    renderExpenseList('expense-list', sorted.slice(0,10), true);
   }
 
   function updateCard(person, wallet, incomes, expenses) {
@@ -575,70 +657,89 @@
     document.getElementById('total-bar').style.width = `${pct}%`;
   }
 
-  function renderExpenseList(listId, items) {
+  // ── 支出リスト描画（タップで編集対応）──
+  function renderExpenseList(listId, items, tapToEdit = false) {
     const list = document.getElementById(listId);
-    if (!items.length) { list.innerHTML='<div class="empty-state">支出がまだありません<br>右下の＋から登録できます</div>'; return; }
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-state">支出がまだありません<br>右下の＋から登録できます</div>';
+      return;
+    }
     list.innerHTML = '';
     items.forEach(d => {
-      const date=d.date.toDate(), personLabel=d.person==='husband'?'夫':'妻', walletLabel=d.walletType==='salary'?'月給':'ボーナス';
-      const item=document.createElement('div'); item.className='expense-item';
-      item.innerHTML=`<div class="expense-category-dot"></div><div class="expense-info"><div class="expense-category">${d.category}${d.isFixed?'　<span style="font-size:10px;color:var(--text-muted)">🔁固定</span>':''}</div><div class="expense-meta">${date.getMonth()+1}/${date.getDate()} · ${personLabel}（${walletLabel}）${d.memo?' · '+d.memo:''}</div></div><div class="expense-amount">¥${d.amount.toLocaleString()}</div>`;
+      const date = d.date.toDate();
+      const personLabel = d.person==='husband'?'夫':'妻';
+      const walletLabel = d.walletType==='salary'?'月給':'ボーナス';
+      const item = document.createElement('div');
+      item.className = 'expense-item';
+      item.innerHTML = `
+        <div class="expense-category-dot"></div>
+        <div class="expense-info">
+          <div class="expense-category">${d.category}${d.isFixed?'　<span style="font-size:10px;color:var(--text-muted)">🔁固定</span>':''}</div>
+          <div class="expense-meta">${date.getMonth()+1}/${date.getDate()} · ${personLabel}（${walletLabel}）${d.memo?' · '+d.memo:''}</div>
+        </div>
+        <div class="expense-amount">¥${d.amount.toLocaleString()}</div>
+        <div class="expense-chevron">›</div>
+      `;
+      item.addEventListener('click', () => openExpenseModal(d.id));
       list.appendChild(item);
     });
   }
 
   async function loadAllExpenses() {
-    const startDate=new Date(currentYear,currentMonth-1,1), endDate=new Date(currentYear,currentMonth,1);
-    const snap=await getDocs(query(collection(db,'kakeibo_expenses'),where('date','>=',Timestamp.fromDate(startDate)),where('date','<',Timestamp.fromDate(endDate)),orderBy('date','desc')));
-    const items=[]; snap.forEach(d=>items.push({id:d.id,...d.data()}));
-    renderExpenseList('expense-list-full',items);
+    const startDate = new Date(currentYear, currentMonth-1, 1);
+    const endDate = new Date(currentYear, currentMonth, 1);
+    const snap = await getDocs(query(
+      collection(db,'kakeibo_expenses'),
+      where('date','>=',Timestamp.fromDate(startDate)),
+      where('date','<',Timestamp.fromDate(endDate)),
+      orderBy('date','desc')
+    ));
+    const items = [];
+    snap.forEach(d => items.push({id:d.id,...d.data()}));
+    renderExpenseList('expense-list-full', items, true);
   }
 
   async function loadIncomes() {
-    const yearMonth=`${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-    const snap=await getDocs(query(collection(db,'kakeibo_incomes'),where('yearMonth','==',yearMonth)));
-    const grid=document.getElementById('income-grid'), items=[];
-    snap.forEach(d=>items.push({id:d.id,...d.data()}));
-    if(!items.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">収入が登録されていません</div>';return;}
-    grid.innerHTML='';
-    items.forEach(d=>{
-      const personLabel=d.person==='husband'?'👔 夫':'👗 妻', walletLabel=d.walletType==='salary'?'月給':'ボーナス';
-      const card=document.createElement('div'); card.className='income-card';
-      card.innerHTML=`<div class="ic-person">${personLabel}</div><div class="ic-type">${walletLabel}</div><div class="ic-amount">¥${d.amount.toLocaleString()}</div>${d.memo?`<div class="ic-type" style="margin-top:4px">${d.memo}</div>`:''}`;
+    const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+    const snap = await getDocs(query(collection(db,'kakeibo_incomes'), where('yearMonth','==',yearMonth)));
+    const grid = document.getElementById('income-grid'), items = [];
+    snap.forEach(d => items.push({id:d.id,...d.data()}));
+    if (!items.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">収入が登録されていません</div>'; return; }
+    grid.innerHTML = '';
+    items.forEach(d => {
+      const personLabel = d.person==='husband'?'👔 夫':'👗 妻';
+      const walletLabel = d.walletType==='salary'?'月給':'ボーナス';
+      const card = document.createElement('div'); card.className = 'income-card';
+      card.innerHTML = `<div class="ic-person">${personLabel}</div><div class="ic-type">${walletLabel}</div><div class="ic-amount">¥${d.amount.toLocaleString()}</div>${d.memo?`<div class="ic-type" style="margin-top:4px">${d.memo}</div>`:''}`;
       grid.appendChild(card);
     });
   }
 
-  // ── 固定費：夫妻別グループ表示 ──
+  function getScheduleLabel(d) {
+    if (d.walletType === 'bonus') return `${bonus1.month}/${bonus1.day}・${bonus2.month}/${bonus2.day}（ボーナス）`;
+    if (d.repeat === 'monthly') return `毎月${payday}日`;
+    return `毎年${d.targetMonth}月${payday}日`;
+  }
+
   async function loadFixed() {
     const snap = await getDocs(collection(db,'kakeibo_fixed_expenses'));
     const all = [];
     snap.forEach(d => all.push({id:d.id,...d.data()}));
-
     const husband = all.filter(d => d.person === 'husband');
     const wife = all.filter(d => d.person === 'wife');
-
-    // 合計カード更新
     const hTotal = husband.reduce((a,b)=>a+b.amount,0);
     const wTotal = wife.reduce((a,b)=>a+b.amount,0);
     document.getElementById('fixed-total-husband').textContent = `¥${hTotal.toLocaleString()}`;
     document.getElementById('fixed-count-husband').textContent = `${husband.length}件`;
     document.getElementById('fixed-total-wife').textContent = `¥${wTotal.toLocaleString()}`;
     document.getElementById('fixed-count-wife').textContent = `${wife.length}件`;
-
-    // 夫グループ
-    renderFixedGroup('fixed-group-husband', '👔 夫', husband, hTotal);
-    // 妻グループ
-    renderFixedGroup('fixed-group-wife', '👗 妻', wife, wTotal);
+    renderFixedGroup('fixed-group-husband','👔 夫', husband, hTotal);
+    renderFixedGroup('fixed-group-wife','👗 妻', wife, wTotal);
   }
 
   function renderFixedGroup(containerId, label, items, total) {
     const container = document.getElementById(containerId);
     if (!items.length) { container.innerHTML = ''; return; }
-
-    const repeatLabel = (d) => d.repeat==='monthly' ? `毎月${payday}日` : `毎年${d.targetMonth}月${payday}日`;
-    const walletLabel = (d) => d.walletType==='salary' ? '月給' : 'ボーナス';
-
     container.innerHTML = `
       <div class="fixed-group-header">
         <span class="fgh-label">${label}</span>
@@ -646,12 +747,13 @@
       </div>
       <div class="fixed-list">
         ${items.map(d => `
-          <div class="fixed-item">
+          <div class="fixed-item${d.walletType==='bonus'?' is-bonus':''}">
             <div class="fixed-info">
               <div class="fixed-name">${d.name}</div>
-              <div class="fixed-meta">${d.category} · ${walletLabel(d)} · ${repeatLabel(d)}</div>
+              <div class="fixed-meta">${d.category} · ${getScheduleLabel(d)}</div>
             </div>
             ${d.amountType==='variable'?'<span class="fixed-variable-badge">変動</span>':''}
+            ${d.walletType==='bonus'?'<span class="fixed-bonus-badge">💰ボーナス</span>':''}
             <div class="fixed-amount">¥${d.amount.toLocaleString()}</div>
             <button class="btn-edit" onclick="openFixedModal('${d.id}')">編集</button>
             <button class="btn-delete" onclick="deleteFixed('${d.id}')">×</button>
@@ -661,13 +763,106 @@
     `;
   }
 
-  // ── 固定費モーダル（新規 or 編集） ──
+  // ── 支出モーダル（新規 or 編集）──
+  window.openExpenseModal = async (id) => {
+    document.getElementById('expense-edit-id').value = id || '';
+    document.getElementById('expense-modal-title').textContent = id ? '支出を編集' : '支出を登録';
+
+    if (id) {
+      const snap = await getDoc(doc(db,'kakeibo_expenses',id));
+      if (snap.exists()) {
+        const d = snap.data();
+        document.getElementById('expense-amount').value = d.amount || '';
+        document.getElementById('expense-category').value = d.category || '';
+        document.getElementById('expense-person').value = d.person || 'husband';
+        document.getElementById('expense-wallet').value = d.walletType || 'salary';
+        const date = d.date.toDate();
+        document.getElementById('expense-date').value = date.toISOString().split('T')[0];
+        document.getElementById('expense-memo').value = d.memo || '';
+      }
+      document.getElementById('expense-modal-actions').innerHTML = `
+        <button class="btn-danger" onclick="deleteExpenseFromModal()">削除</button>
+        <button class="btn-secondary" onclick="closeModal('expense-modal')" style="flex:1">キャンセル</button>
+        <button class="btn-primary" style="flex:2" id="expense-save-btn" onclick="saveExpense()">更新する</button>
+      `;
+    } else {
+      document.getElementById('expense-amount').value = '';
+      document.getElementById('expense-category').value = '';
+      document.getElementById('expense-memo').value = '';
+      document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('expense-modal-actions').innerHTML = `
+        <button class="btn-secondary" onclick="closeModal('expense-modal')">キャンセル</button>
+        <button class="btn-primary" style="flex:2" id="expense-save-btn" onclick="saveExpense()">登録する</button>
+      `;
+    }
+    document.getElementById('expense-modal').classList.add('open');
+  };
+
+  window.saveExpense = async () => {
+    const editId = document.getElementById('expense-edit-id').value;
+    const amount = parseInt(document.getElementById('expense-amount').value);
+    const category = document.getElementById('expense-category').value;
+    const person = document.getElementById('expense-person').value;
+    const walletType = document.getElementById('expense-wallet').value;
+    const dateStr = document.getElementById('expense-date').value;
+    const memo = document.getElementById('expense-memo').value.trim();
+    if (!amount || !category || !dateStr) { showToast('金額・費目・日付は必須です'); return; }
+    const btn = document.getElementById('expense-save-btn');
+    btn.disabled = true; btn.textContent = editId ? '更新中...' : '登録中...';
+    try {
+      const data = { amount, category, person, walletType, date: Timestamp.fromDate(new Date(dateStr)), memo };
+      if (editId) {
+        await updateDoc(doc(db,'kakeibo_expenses',editId), data);
+        showToast('✅ 支出を更新しました');
+      } else {
+        await addDoc(collection(db,'kakeibo_expenses'), { ...data, isFixed: false, createdAt: Timestamp.now() });
+        showToast('✅ 支出を登録しました');
+      }
+      closeModal('expense-modal'); await loadAll();
+    } catch(e) { showToast('保存に失敗しました'); console.error(e); }
+    finally { btn.disabled = false; }
+  };
+
+  window.deleteExpenseFromModal = async () => {
+    const editId = document.getElementById('expense-edit-id').value;
+    if (!editId || !confirm('この支出を削除しますか？')) return;
+    await deleteDoc(doc(db,'kakeibo_expenses',editId));
+    closeModal('expense-modal');
+    showToast('削除しました');
+    await loadAll();
+  };
+
+  // ── 収入登録 ──
+  window.openIncomeModal = () => {
+    document.getElementById('income-amount').value = '';
+    document.getElementById('income-memo').value = '';
+    document.getElementById('income-modal').classList.add('open');
+  };
+  window.saveIncome = async () => {
+    const person = document.getElementById('income-person').value;
+    const walletType = document.getElementById('income-wallet').value;
+    const amount = parseInt(document.getElementById('income-amount').value);
+    const memo = document.getElementById('income-memo').value.trim();
+    const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+    if (!amount) { showToast('金額を入力してください'); return; }
+    const btn = document.querySelector('#income-modal .btn-primary');
+    btn.disabled = true; btn.textContent = '登録中...';
+    try {
+      await addDoc(collection(db,'kakeibo_incomes'), { person, walletType, amount, memo, yearMonth, createdAt: Timestamp.now() });
+      closeModal('income-modal'); showToast('✅ 収入を登録しました'); await loadAll();
+    } catch(e) { showToast('登録に失敗しました'); }
+    finally { btn.disabled = false; btn.textContent = '登録する'; }
+  };
+
+  // ── 固定費モーダル ──
+  window.onWalletChange = () => {
+    const wallet = document.getElementById('fixed-wallet').value;
+    document.getElementById('salary-repeat-section').style.display = wallet==='salary' ? 'block' : 'none';
+    document.getElementById('bonus-repeat-section').style.display = wallet==='bonus' ? 'block' : 'none';
+  };
   window.openFixedModal = async (id) => {
     document.getElementById('fixed-edit-id').value = id || '';
     document.getElementById('fixed-modal-title').textContent = id ? '固定費を編集' : '固定費を登録';
-    document.getElementById('fixed-save-btn').textContent = id ? '更新する' : '登録する';
-
-    // 編集モード：既存データを読み込む
     if (id) {
       const snap = await getDoc(doc(db,'kakeibo_fixed_expenses',id));
       if (snap.exists()) {
@@ -678,12 +873,11 @@
         document.getElementById('fixed-wallet').value = d.walletType || 'salary';
         document.getElementById('fixed-amount').value = d.amount || '';
         document.getElementById('fixed-amount-type').value = d.amountType || 'fixed';
+        document.getElementById('fixed-amount-type-bonus').value = d.amountType || 'fixed';
         document.getElementById('fixed-repeat').value = d.repeat || 'monthly';
         document.getElementById('fixed-target-month').value = d.targetMonth || 1;
         document.getElementById('target-month-group').style.display = d.repeat==='yearly' ? 'block' : 'none';
       }
-
-      // 編集モードは削除ボタンも表示
       document.getElementById('fixed-modal-actions').innerHTML = `
         <button class="btn-danger" onclick="deleteFixedFromModal()">削除</button>
         <button class="btn-secondary" onclick="closeModal('fixed-modal')" style="flex:1">キャンセル</button>
@@ -692,6 +886,7 @@
     } else {
       document.getElementById('fixed-name').value = '';
       document.getElementById('fixed-amount').value = '';
+      document.getElementById('fixed-wallet').value = 'salary';
       document.getElementById('fixed-repeat').value = 'monthly';
       document.getElementById('target-month-group').style.display = 'none';
       document.getElementById('fixed-modal-actions').innerHTML = `
@@ -699,13 +894,14 @@
         <button class="btn-primary" style="flex:2" id="fixed-save-btn" onclick="saveFixed()">登録する</button>
       `;
     }
+    const wallet = document.getElementById('fixed-wallet').value;
+    document.getElementById('salary-repeat-section').style.display = wallet==='salary' ? 'block' : 'none';
+    document.getElementById('bonus-repeat-section').style.display = wallet==='bonus' ? 'block' : 'none';
     document.getElementById('fixed-modal').classList.add('open');
   };
-
   window.toggleTargetMonth = () => {
     document.getElementById('target-month-group').style.display = document.getElementById('fixed-repeat').value==='yearly' ? 'block' : 'none';
   };
-
   window.saveFixed = async () => {
     const editId = document.getElementById('fixed-edit-id').value;
     const name = document.getElementById('fixed-name').value.trim();
@@ -713,11 +909,11 @@
     const person = document.getElementById('fixed-person').value;
     const walletType = document.getElementById('fixed-wallet').value;
     const amount = parseInt(document.getElementById('fixed-amount').value);
-    const amountType = document.getElementById('fixed-amount-type').value;
-    const repeat = document.getElementById('fixed-repeat').value;
-    const targetMonth = repeat==='yearly' ? parseInt(document.getElementById('fixed-target-month').value) : null;
+    const isBonus = walletType === 'bonus';
+    const amountType = isBonus ? document.getElementById('fixed-amount-type-bonus').value : document.getElementById('fixed-amount-type').value;
+    const repeat = isBonus ? 'bonus' : document.getElementById('fixed-repeat').value;
+    const targetMonth = (!isBonus && repeat==='yearly') ? parseInt(document.getElementById('fixed-target-month').value) : null;
     if (!name || !category || !amount) { showToast('名称・費目・金額は必須です'); return; }
-
     const btn = document.getElementById('fixed-save-btn');
     btn.disabled = true; btn.textContent = editId ? '更新中...' : '登録中...';
     try {
@@ -729,81 +925,27 @@
         await addDoc(collection(db,'kakeibo_fixed_expenses'), { ...data, createdAt: Timestamp.now() });
         showToast('✅ 固定費を登録しました');
       }
-      closeModal('fixed-modal');
-      await loadFixed();
-    } catch(e) { showToast('保存に失敗しました'); console.error(e); }
+      closeModal('fixed-modal'); await loadFixed();
+    } catch(e) { showToast('保存に失敗しました'); }
     finally { btn.disabled = false; }
   };
-
   window.deleteFixedFromModal = async () => {
     const editId = document.getElementById('fixed-edit-id').value;
     if (!editId || !confirm('この固定費を削除しますか？')) return;
     await deleteDoc(doc(db,'kakeibo_fixed_expenses',editId));
-    closeModal('fixed-modal');
-    showToast('削除しました');
-    await loadFixed();
+    closeModal('fixed-modal'); showToast('削除しました'); await loadFixed();
   };
-
   window.deleteFixed = async (id) => {
     if (!confirm('この固定費を削除しますか？')) return;
     await deleteDoc(doc(db,'kakeibo_fixed_expenses',id));
-    showToast('削除しました');
-    await loadFixed();
-  };
-
-  // ── 支出登録 ──
-  window.openExpenseModal = () => {
-    document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('expense-amount').value = '';
-    document.getElementById('expense-memo').value = '';
-    document.getElementById('expense-modal').classList.add('open');
-  };
-
-  window.saveExpense = async () => {
-    const amount=parseInt(document.getElementById('expense-amount').value);
-    const category=document.getElementById('expense-category').value;
-    const person=document.getElementById('expense-person').value;
-    const walletType=document.getElementById('expense-wallet').value;
-    const dateStr=document.getElementById('expense-date').value;
-    const memo=document.getElementById('expense-memo').value.trim();
-    if(!amount||!category||!dateStr){showToast('金額・費目・日付は必須です');return;}
-    const btn=document.querySelector('#expense-modal .btn-primary');
-    btn.disabled=true; btn.textContent='登録中...';
-    try {
-      await addDoc(collection(db,'kakeibo_expenses'),{amount,category,person,walletType,date:Timestamp.fromDate(new Date(dateStr)),memo,isFixed:false,createdAt:Timestamp.now()});
-      closeModal('expense-modal'); showToast('✅ 支出を登録しました'); await loadAll();
-    } catch(e){showToast('登録に失敗しました');}
-    finally{btn.disabled=false;btn.textContent='登録する';}
-  };
-
-  // ── 収入登録 ──
-  window.openIncomeModal = () => {
-    document.getElementById('income-amount').value='';
-    document.getElementById('income-memo').value='';
-    document.getElementById('income-modal').classList.add('open');
-  };
-
-  window.saveIncome = async () => {
-    const person=document.getElementById('income-person').value;
-    const walletType=document.getElementById('income-wallet').value;
-    const amount=parseInt(document.getElementById('income-amount').value);
-    const memo=document.getElementById('income-memo').value.trim();
-    const yearMonth=`${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-    if(!amount){showToast('金額を入力してください');return;}
-    const btn=document.querySelector('#income-modal .btn-primary');
-    btn.disabled=true; btn.textContent='登録中...';
-    try {
-      await addDoc(collection(db,'kakeibo_incomes'),{person,walletType,amount,memo,yearMonth,createdAt:Timestamp.now()});
-      closeModal('income-modal'); showToast('✅ 収入を登録しました'); await loadAll();
-    } catch(e){showToast('登録に失敗しました');}
-    finally{btn.disabled=false;btn.textContent='登録する';}
+    showToast('削除しました'); await loadFixed();
   };
 
   window.closeModal = (id) => document.getElementById(id).classList.remove('open');
 
   function showToast(msg) {
-    const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),2500);
+    const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
   }
 
   document.querySelectorAll('.modal-overlay').forEach(el => {
