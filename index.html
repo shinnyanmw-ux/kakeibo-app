@@ -197,7 +197,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.6.0</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.7.0</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -275,6 +275,16 @@
 
     <div class="fixed-group" id="fixed-group-husband"></div>
     <div class="fixed-group" id="fixed-group-wife"></div>
+    <!-- 今月計上ボタン -->
+    <div style="background:var(--surface);border:1.5px solid var(--primary);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:4px;">📅 今月の固定費を計上する</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">給与が入ったタイミングで押してください。今月まだ計上していない固定費が一括登録されます。</div>
+      <button onclick="postFixedExpenses()" style="width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;">
+        💴 今月分を計上する
+      </button>
+      <div id="post-fixed-status" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;min-height:16px;"></div>
+    </div>
+
     <button class="btn-add-income" onclick="openFixedModal(null)">＋ 固定費を追加</button>
     <div class="hint-box">
       💡 <strong>月給分</strong>は毎月<span id="hint-payday">25</span>日に計上されます。<br>
@@ -374,7 +384,8 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
         <div style="font-size:12px;color:var(--text);line-height:2.2;">
-          <span style="color:var(--primary);font-weight:600;">v1.6.0</span>　OCR機能を削除（現在）<br>
+          <span style="color:var(--primary);font-weight:600;">v1.7.0</span>　固定費の一括計上ボタン追加（現在）<br>
+          <span style="color:var(--text-muted);">v1.6.0</span>　OCR機能を削除<br>
           <span style="color:var(--text-muted);">v1.5.x</span>　OCR実装・デバッグ（廃止）<br>
           <span style="color:var(--text-muted);">v1.5.0</span>　レシートOCR機能追加<br>
           <span style="color:var(--text-muted);">v1.4.0</span>　CSV出力・固定費合計（月給/ボーナス別）<br>
@@ -397,6 +408,7 @@
           ・25日締めサイクル対応<br>
           ・支出一覧<br>
           ・データ出力（CSV：支出・収入・固定費）<br>
+          ・固定費の一括計上ボタン（二重計上防止付き）<br>
         </div>
       </div>
     </div>
@@ -1162,6 +1174,91 @@
     if (!confirm('この固定費を削除しますか？')) return;
     await deleteDoc(doc(db,'kakeibo_fixed_expenses',id));
     showToast('削除しました'); await loadFixed();
+  };
+
+  // ── 固定費の一括計上 ──
+  window.postFixedExpenses = async () => {
+    const status = document.getElementById('post-fixed-status');
+    const btn = document.querySelector('[onclick="postFixedExpenses()"]');
+    btn.disabled = true; btn.textContent = '計上中...';
+    status.textContent = '';
+
+    try {
+      const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
+      // 今月すでに計上済みか確認（isFixed=trueの支出が存在するか）
+      const startDate = new Date(currentYear, currentMonth-2, payday);
+      const endDate = new Date(currentYear, currentMonth-1, payday);
+      const existingSnap = await getDocs(query(
+        collection(db,'kakeibo_expenses'),
+        where('isFixed','==',true),
+        where('date','>=',Timestamp.fromDate(startDate)),
+        where('date','<',Timestamp.fromDate(endDate))
+      ));
+
+      if (!existingSnap.empty) {
+        const count = existingSnap.size;
+        if (!confirm(`今月はすでに${count}件の固定費が計上されています。再度計上しますか？`)) {
+          btn.disabled = false; btn.textContent = '💴 今月分を計上する';
+          return;
+        }
+      }
+
+      // 固定費マスターを取得
+      const fixedSnap = await getDocs(collection(db,'kakeibo_fixed_expenses'));
+      const fixedItems = [];
+      fixedSnap.forEach(d => fixedItems.push({id:d.id,...d.data()}));
+
+      if (!fixedItems.length) {
+        status.textContent = '⚠️ 固定費マスターが空です。先に固定費を登録してください。';
+        return;
+      }
+
+      // 計上対象を絞り込む
+      const targets = fixedItems.filter(d => {
+        if (d.walletType === 'bonus') {
+          // ボーナス：6月か12月の支給月のみ
+          return currentMonth === bonus1.month || currentMonth === bonus2.month;
+        }
+        if (d.repeat === 'yearly') {
+          // 年1回：対象月のみ
+          return d.targetMonth === currentMonth;
+        }
+        // 毎月
+        return true;
+      });
+
+      if (!targets.length) {
+        status.textContent = `⚠️ 今月（${currentMonth}月）計上対象の固定費がありません。`;
+        return;
+      }
+
+      // 計上日（支給日）を設定
+      const postDate = new Date(currentYear, currentMonth-1, payday);
+
+      // 支出テーブルに一括登録
+      const promises = targets.map(d => addDoc(collection(db,'kakeibo_expenses'), {
+        amount: d.amount,
+        category: d.category,
+        person: d.person,
+        walletType: d.walletType,
+        date: Timestamp.fromDate(postDate),
+        memo: d.name,
+        isFixed: true,
+        createdAt: Timestamp.now()
+      }));
+      await Promise.all(promises);
+
+      status.textContent = `✅ ${targets.length}件の固定費を計上しました`;
+      showToast(`✅ ${targets.length}件計上しました`);
+      await loadAll();
+
+    } catch(e) {
+      status.textContent = '⚠️ 計上に失敗しました';
+      console.error(e);
+    } finally {
+      btn.disabled = false; btn.textContent = '💴 今月分を計上する';
+    }
   };
 
   window.closeModal = (id) => document.getElementById(id).classList.remove('open');
