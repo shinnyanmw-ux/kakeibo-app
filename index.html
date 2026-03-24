@@ -368,6 +368,47 @@
         <button class="settings-value" onclick="handleLogout()" style="background:#fff0f0;color:#C0392B;">ログアウト</button>
       </div>
     </div>
+
+    <div class="settings-section-title">📋 開発メモ</div>
+    <div class="settings-section">
+      <div style="padding:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">✅ 実装済み</div>
+        <div style="font-size:13px;color:var(--text);line-height:2;">
+          ・ログイン（Firebase Auth）<br>
+          ・支出の登録・編集・削除<br>
+          ・収入の登録<br>
+          ・固定費マスター（月給・ボーナス別、自動計上設定）<br>
+          ・ダッシュボード（夫/妻 × 月給残り）<br>
+          ・25日締めサイクル対応<br>
+          ・支出一覧<br>
+          ・データ出力（CSV：支出・収入・固定費）<br>
+          ・レシートOCR（Google Vision API）
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" style="margin-top:12px">
+      <div style="padding:16px">
+        <div style="font-size:12px;font-weight:600;color:#E65100;margin-bottom:10px;letter-spacing:0.05em;">⚠️ 技術的負債・要改修</div>
+        <div style="font-size:13px;color:var(--text);line-height:2;">
+          ・Vision APIキーがフロントエンドに直書き<br>
+          　→ Firebase Cloud Functionsに移行してキーを隠す<br>
+          ・固定費の自動計上ロジック未実装<br>
+          　→ Firebase Scheduled Functionsで毎月25日に自動登録する処理が必要
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" style="margin-top:12px">
+      <div style="padding:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:10px;letter-spacing:0.05em;">🔜 今後の予定</div>
+        <div style="font-size:13px;color:var(--text);line-height:2;">
+          ・フェーズ2：Looker Studio連携（カテゴリ別分析）<br>
+          ・フェーズ3：収入シミュレーション<br>
+          ・フェーズ4：資産管理（貯蓄・NISA残高）
+        </div>
+      </div>
+    </div>
   </div>
 
   <button class="fab" id="fab-btn" onclick="handleFab()">＋</button>
@@ -1222,8 +1263,7 @@
       }
 
     } catch(err) {
-      status.textContent = '⚠️ 読み取りに失敗しました。手入力してください。';
-      console.error(err);
+      status.innerHTML = `⚠️ エラー内容:<br><small style="word-break:break-all;font-size:10px">${err.name}: ${err.message}</small>`;
     } finally {
       btn.textContent = '📷 レシートを撮影して自動入力';
       btn.style.opacity = '1';
