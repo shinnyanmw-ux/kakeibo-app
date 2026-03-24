@@ -387,6 +387,16 @@
     <div class="modal-handle"></div>
     <h2 id="expense-modal-title">支出を登録</h2>
     <input type="hidden" id="expense-edit-id">
+
+    <!-- OCRボタン -->
+    <div style="margin-bottom:16px">
+      <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display:none">
+      <button type="button" id="ocr-btn" style="width:100%;padding:12px;background:var(--bonus-bg);border:1.5px dashed #e8c99a;border-radius:10px;font-size:14px;color:var(--bonus);cursor:pointer;font-family:'Noto Sans JP',sans-serif;">
+        📷 レシートを撮影して自動入力
+      </button>
+      <div id="ocr-status" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:6px;min-height:18px;"></div>
+    </div>
+
     <div class="form-group"><label>金額</label><input type="number" id="expense-amount" placeholder="0" inputmode="numeric"></div>
     <div class="form-group"><label>費目</label><select id="expense-category"><option value="">選択してください</option></select></div>
     <div class="form-group"><label>支出者</label><select id="expense-person"><option value="husband">夫</option><option value="wife">妻</option></select></div>
@@ -648,7 +658,10 @@
   };
 
   function updateMonthLabels() {
-    const label = `${currentYear}年${currentMonth}月`;
+    // 前月25日〜当月24日のサイクル表示
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const label = `${currentYear}年${currentMonth}月（${prevMonth}/${payday}〜${currentMonth}/24）`;
     ['current-month-label','current-month-label2','current-month-label3'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = label; });
   }
 
@@ -674,8 +687,9 @@
 
   async function loadDashboard() {
     const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-    const startDate = new Date(currentYear, currentMonth-1, 1);
-    const endDate = new Date(currentYear, currentMonth, 1);
+    // 支給日サイクル：前月25日〜当月24日
+    const startDate = new Date(currentYear, currentMonth-2, payday);
+    const endDate = new Date(currentYear, currentMonth-1, payday);
     const [incomeSnap, expenseSnap] = await Promise.all([
       getDocs(query(collection(db,'kakeibo_incomes'), where('yearMonth','==',yearMonth))),
       getDocs(query(collection(db,'kakeibo_expenses'), where('date','>=',Timestamp.fromDate(startDate)), where('date','<',Timestamp.fromDate(endDate))))
@@ -723,7 +737,8 @@
   }
 
   async function loadAllExpenses() {
-    const startDate=new Date(currentYear,currentMonth-1,1), endDate=new Date(currentYear,currentMonth,1);
+    const startDate = new Date(currentYear, currentMonth-2, payday);
+    const endDate = new Date(currentYear, currentMonth-1, payday);
     const snap=await getDocs(query(collection(db,'kakeibo_expenses'),where('date','>=',Timestamp.fromDate(startDate)),where('date','<',Timestamp.fromDate(endDate)),orderBy('date','desc')));
     const items=[]; snap.forEach(d=>items.push({id:d.id,...d.data()}));
     renderExpenseList('expense-list-full',items);
@@ -1111,6 +1126,103 @@
     const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
+
+  // ── Google Vision API OCR ──
+  const VISION_API_KEY = 'AIzaSyBqbvyBiv8ixAeR6TjFRvYdmLlKcx1QU50';
+
+  document.getElementById('ocr-btn').addEventListener('click', () => {
+    document.getElementById('ocr-file-input').click();
+  });
+
+  document.getElementById('ocr-file-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const status = document.getElementById('ocr-status');
+    const btn = document.getElementById('ocr-btn');
+    btn.textContent = '⏳ 読み取り中...';
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+    status.textContent = '';
+
+    try {
+      // base64変換
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      // Vision API呼び出し
+      const response = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{
+              image: { content: base64 },
+              features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+            }]
+          })
+        }
+      );
+
+      const data = await response.json();
+      const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
+
+      if (!text) { status.textContent = '⚠️ テキストを読み取れませんでした'; return; }
+
+      // 金額抽出：「合計」「小計」「お会計」に続く金額、または最大金額を探す
+      let amount = null;
+      const totalPatterns = [
+        /(?:合計|小計|お会計|お支払|請求額|総合計|税込合計|税込)[^\d]*[¥￥]?\s*([\d,]+)/,
+        /[¥￥]\s*([\d,]+)/g
+      ];
+
+      // まず「合計」系のキーワードで探す
+      const totalMatch = text.match(totalPatterns[0]);
+      if (totalMatch) {
+        amount = parseInt(totalMatch[1].replace(/,/g, ''));
+      } else {
+        // 見つからなければ全金額から最大値を取る
+        const allAmounts = [];
+        let m;
+        const yenRegex = /[¥￥]\s*([\d,]+)/g;
+        while ((m = yenRegex.exec(text)) !== null) {
+          const val = parseInt(m[1].replace(/,/g, ''));
+          if (val > 0) allAmounts.push(val);
+        }
+        if (allAmounts.length > 0) amount = Math.max(...allAmounts);
+      }
+
+      // 店名抽出：最初の1〜2行を店名候補とする
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const storeName = lines.slice(0, 2).join(' ').substring(0, 20);
+
+      // フォームに反映
+      if (amount) {
+        document.getElementById('expense-amount').value = amount;
+        status.textContent = `✅ 金額: ¥${amount.toLocaleString()} を読み取りました`;
+      } else {
+        status.textContent = '⚠️ 金額を自動検出できませんでした。手入力してください。';
+      }
+      if (storeName) {
+        document.getElementById('expense-memo').value = storeName;
+      }
+
+    } catch(err) {
+      status.textContent = '⚠️ 読み取りに失敗しました。手入力してください。';
+      console.error(err);
+    } finally {
+      btn.textContent = '📷 レシートを撮影して自動入力';
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      // inputをリセット（同じファイルを再選択できるように）
+      document.getElementById('ocr-file-input').value = '';
+    }
+  });
 
   document.querySelectorAll('.modal-overlay').forEach(el => {
     el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
