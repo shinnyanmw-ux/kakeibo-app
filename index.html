@@ -197,7 +197,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo</h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.6.0</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -372,6 +372,21 @@
     <div class="settings-section-title">📋 開発メモ</div>
     <div class="settings-section">
       <div style="padding:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
+        <div style="font-size:12px;color:var(--text);line-height:2.2;">
+          <span style="color:var(--primary);font-weight:600;">v1.6.0</span>　OCR機能を削除（現在）<br>
+          <span style="color:var(--text-muted);">v1.5.x</span>　OCR実装・デバッグ（廃止）<br>
+          <span style="color:var(--text-muted);">v1.5.0</span>　レシートOCR機能追加<br>
+          <span style="color:var(--text-muted);">v1.4.0</span>　CSV出力・固定費合計（月給/ボーナス別）<br>
+          <span style="color:var(--text-muted);">v1.3.0</span>　支出の編集・削除機能<br>
+          <span style="color:var(--text-muted);">v1.2.0</span>　固定費マスター・ボーナス支給日設定<br>
+          <span style="color:var(--text-muted);">v1.1.0</span>　収入登録・設定画面<br>
+          <span style="color:var(--text-muted);">v1.0.0</span>　初回リリース（ログイン・支出登録・ダッシュボード）
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">✅ 実装済み</div>
         <div style="font-size:13px;color:var(--text);line-height:2;">
           ・ログイン（Firebase Auth）<br>
@@ -382,7 +397,6 @@
           ・25日締めサイクル対応<br>
           ・支出一覧<br>
           ・データ出力（CSV：支出・収入・固定費）<br>
-          ・レシートOCR（Google Vision API）
         </div>
       </div>
     </div>
@@ -391,8 +405,6 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:#E65100;margin-bottom:10px;letter-spacing:0.05em;">⚠️ 技術的負債・要改修</div>
         <div style="font-size:13px;color:var(--text);line-height:2;">
-          ・Vision APIキーがフロントエンドに直書き<br>
-          　→ Firebase Cloud Functionsに移行してキーを隠す<br>
           ・固定費の自動計上ロジック未実装<br>
           　→ Firebase Scheduled Functionsで毎月25日に自動登録する処理が必要
         </div>
@@ -428,15 +440,6 @@
     <div class="modal-handle"></div>
     <h2 id="expense-modal-title">支出を登録</h2>
     <input type="hidden" id="expense-edit-id">
-
-    <!-- OCRボタン -->
-    <div style="margin-bottom:16px">
-      <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display:none">
-      <button type="button" id="ocr-btn" style="width:100%;padding:12px;background:var(--bonus-bg);border:1.5px dashed #e8c99a;border-radius:10px;font-size:14px;color:var(--bonus);cursor:pointer;font-family:'Noto Sans JP',sans-serif;">
-        📷 レシートを撮影して自動入力
-      </button>
-      <div id="ocr-status" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:6px;min-height:18px;"></div>
-    </div>
 
     <div class="form-group"><label>金額</label><input type="number" id="expense-amount" placeholder="0" inputmode="numeric"></div>
     <div class="form-group"><label>費目</label><select id="expense-category"><option value="">選択してください</option></select></div>
@@ -1169,116 +1172,7 @@
   }
 
   // ── Google Vision API OCR ──
-  const VISION_API_KEY = 'AIzaSyBqbvyBiv8ixAeR6TjFRvYdmLlKcx1QU50';
-
-  document.getElementById('ocr-btn').addEventListener('click', () => {
-    document.getElementById('ocr-file-input').click();
-  });
-
-  document.getElementById('ocr-file-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const status = document.getElementById('ocr-status');
-    const btn = document.getElementById('ocr-btn');
-    btn.textContent = '⏳ 読み取り中...';
-    btn.style.opacity = '0.6';
-    btn.style.cursor = 'not-allowed';
-    status.textContent = '';
-
-    try {
-      // base64変換
-      const base64 = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result.split(',')[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
-
-      // Vision API呼び出し
-      let response, data;
-      try {
-        response = await fetch(
-          `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              requests: [{
-                image: { content: base64 },
-                features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
-              }]
-            })
-          }
-        );
-        data = await response.json();
-      } catch(fetchErr) {
-        status.innerHTML = `⚠️ API接続エラー:<br><small style="word-break:break-all;font-size:10px">${fetchErr.name}: ${fetchErr.message}</small>`;
-        return;
-      }
-
-      if (!response.ok) {
-        const errMsg = data?.error?.message || `HTTPエラー ${response.status}`;
-        status.innerHTML = `⚠️ APIエラー:<br><small style="word-break:break-all;font-size:10px">${errMsg}</small>`;
-        return;
-      }
-      const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
-
-      if (!text) {
-        status.textContent = '⚠️ テキストを読み取れませんでした。もう一度撮影してください。';
-        return;
-      }
-
-      // 金額抽出：「合計」「小計」「お会計」に続く金額、または最大金額を探す
-      let amount = null;
-      const totalPatterns = [
-        /(?:合計|小計|お会計|お支払|請求額|総合計|税込合計|税込)[^\d]*[¥￥]?\s*([\d,]+)/,
-        /[¥￥]\s*([\d,]+)/g
-      ];
-
-      // まず「合計」系のキーワードで探す
-      const totalMatch = text.match(totalPatterns[0]);
-      if (totalMatch) {
-        amount = parseInt(totalMatch[1].replace(/,/g, ''));
-      } else {
-        // 見つからなければ全金額から最大値を取る
-        const allAmounts = [];
-        let m;
-        const yenRegex = /[¥￥]\s*([\d,]+)/g;
-        while ((m = yenRegex.exec(text)) !== null) {
-          const val = parseInt(m[1].replace(/,/g, ''));
-          if (val > 0) allAmounts.push(val);
-        }
-        if (allAmounts.length > 0) amount = Math.max(...allAmounts);
-      }
-
-      // 店名抽出：最初の1〜2行を店名候補とする
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      const storeName = lines.slice(0, 2).join(' ').substring(0, 20);
-
-      // フォームに反映
-      if (amount) {
-        document.getElementById('expense-amount').value = amount;
-        status.textContent = `✅ 金額: ¥${amount.toLocaleString()} を読み取りました`;
-      } else {
-        status.textContent = '⚠️ 金額を自動検出できませんでした。手入力してください。';
-      }
-      if (storeName) {
-        document.getElementById('expense-memo').value = storeName;
-      }
-
-    } catch(err) {
-      status.innerHTML = `⚠️ エラー内容:<br><small style="word-break:break-all;font-size:10px">${err.name}: ${err.message}</small>`;
-    } finally {
-      btn.textContent = '📷 レシートを撮影して自動入力';
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-      // inputをリセット（同じファイルを再選択できるように）
-      document.getElementById('ocr-file-input').value = '';
-    }
-  });
-
-  document.querySelectorAll('.modal-overlay').forEach(el => {
+    document.querySelectorAll('.modal-overlay').forEach(el => {
     el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
   });
   document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') window.handleLogin(); });
