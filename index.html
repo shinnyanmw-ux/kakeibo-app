@@ -1196,31 +1196,36 @@
       });
 
       // Vision API呼び出し
-      const response = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            requests: [{
-              image: { content: base64 },
-              features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
-            }]
-          })
-        }
-      );
+      let response, data;
+      try {
+        response = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { content: base64 },
+                features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+              }]
+            })
+          }
+        );
+        data = await response.json();
+      } catch(fetchErr) {
+        status.innerHTML = `⚠️ API接続エラー:<br><small style="word-break:break-all;font-size:10px">${fetchErr.name}: ${fetchErr.message}</small>`;
+        return;
+      }
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errMsg = data?.error?.message || `HTTPエラー ${response.status}`;
+        status.innerHTML = `⚠️ APIエラー:<br><small style="word-break:break-all;font-size:10px">${errMsg}</small>`;
+        return;
+      }
       const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
 
       if (!text) {
-        const errorInfo = data.responses?.[0]?.error;
-        if (errorInfo) {
-          status.innerHTML = `⚠️ APIエラー:<br><small style="word-break:break-all">${errorInfo.message}</small>`;
-        } else {
-          // レスポンス全体を画面に表示してデバッグ
-          status.innerHTML = `⚠️ テキスト未検出<br><small style="word-break:break-all;font-size:10px">${JSON.stringify(data.responses?.[0]).substring(0,200)}</small>`;
-        }
+        status.textContent = '⚠️ テキストを読み取れませんでした。もう一度撮影してください。';
         return;
       }
 
