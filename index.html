@@ -1172,7 +1172,16 @@
       const data = await response.json();
       const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
 
-      if (!text) { status.textContent = '⚠️ テキストを読み取れませんでした'; return; }
+      if (!text) {
+        const errorInfo = data.responses?.[0]?.error;
+        if (errorInfo) {
+          status.innerHTML = `⚠️ APIエラー:<br><small style="word-break:break-all">${errorInfo.message}</small>`;
+        } else {
+          // レスポンス全体を画面に表示してデバッグ
+          status.innerHTML = `⚠️ テキスト未検出<br><small style="word-break:break-all;font-size:10px">${JSON.stringify(data.responses?.[0]).substring(0,200)}</small>`;
+        }
+        return;
+      }
 
       // 金額抽出：「合計」「小計」「お会計」に続く金額、または最大金額を探す
       let amount = null;
