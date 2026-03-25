@@ -197,7 +197,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.8.1</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.8.2</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -419,7 +419,8 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
         <div style="font-size:12px;color:var(--text);line-height:2.2;">
-          <span style="color:var(--primary);font-weight:600;">v1.8.1</span>　日付のタイムゾーンずれ修正（現在）<br>
+          <span style="color:var(--primary);font-weight:600;">v1.8.2</span>　起動時の表示月を25日締めサイクルに自動対応（現在）<br>
+          <span style="color:var(--text-muted);">v1.8.1</span>　日付のタイムゾーンずれ修正<br>
           <span style="color:var(--text-muted);">v1.8.0</span>　ボーナス計上ボタン分離・ボーナス残りカード追加<br>
           <span style="color:var(--text-muted);">v1.7.0</span>　固定費の一括計上ボタン追加<br>
           <span style="color:var(--text-muted);">v1.6.0</span>　OCR機能を削除<br>
@@ -627,8 +628,16 @@
 
   const CATEGORIES = ["食費","外食","日用品","交通費","医療費","趣味","悠グッズ","モココグッズ","美容代","自宅改善","小遣い","ふるさと納税","特別出費","保険料","衣服","レジャー","教育費","住居費","通信費","貯蓄","光熱費","車維持費","帰省費"];
 
-  let currentYear = new Date().getFullYear();
-  let currentMonth = new Date().getMonth() + 1;
+  // 25日締めサイクルに基づいて初期表示月を決定
+  // 今日が支給日(payday)以降なら翌月を表示
+  const _today = new Date();
+  const _todayDate = _today.getDate();
+  // settingsロード前なのでデフォルト25で計算（loadSettings後に再計算）
+  let currentYear = _today.getFullYear();
+  let currentMonth = _todayDate >= 25
+    ? (_today.getMonth() + 2 > 12 ? 1 : _today.getMonth() + 2)
+    : (_today.getMonth() + 1);
+  if (_todayDate >= 25 && _today.getMonth() + 2 > 12) currentYear += 1;
   let currentTab = 'home';
   let payday = 25;
   let bonus1 = { month: 6, day: 10 };
@@ -673,6 +682,23 @@
       }
     } catch(e) {}
     updateAllSettingsDisplay();
+
+    // paydayが確定したので初期表示月を再計算
+    const todayForCycle = new Date();
+    if (todayForCycle.getDate() >= payday) {
+      const nextMonth = todayForCycle.getMonth() + 2;
+      if (nextMonth > 12) {
+        currentMonth = 1;
+        currentYear = todayForCycle.getFullYear() + 1;
+      } else {
+        currentMonth = nextMonth;
+        currentYear = todayForCycle.getFullYear();
+      }
+    } else {
+      currentMonth = todayForCycle.getMonth() + 1;
+      currentYear = todayForCycle.getFullYear();
+    }
+    updateMonthLabels();
   }
 
   function updateAllSettingsDisplay() {
