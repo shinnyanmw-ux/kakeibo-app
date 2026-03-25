@@ -197,7 +197,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.7.0</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.8.1</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -238,6 +238,27 @@
         </div>
       </div>
     </div>
+
+    <div class="summary-section">
+      <h2>ボーナス残り</h2>
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="card-person">👔 夫</div>
+          <div class="card-label">ボーナス 残り</div>
+          <div class="card-amount" id="husband-bonus-remain">¥—</div>
+          <div class="card-sub" id="husband-bonus-sub">収入未登録</div>
+          <div class="progress-bar"><div class="fill" id="husband-bonus-bar" style="width:0%;background:var(--accent)"></div></div>
+        </div>
+        <div class="summary-card">
+          <div class="card-person">👗 妻</div>
+          <div class="card-label">ボーナス 残り</div>
+          <div class="card-amount" id="wife-bonus-remain">¥—</div>
+          <div class="card-sub" id="wife-bonus-sub">収入未登録</div>
+          <div class="progress-bar"><div class="fill" id="wife-bonus-bar" style="width:0%;background:var(--accent)"></div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="section-header"><h2>最近の支出</h2></div>
     <div class="expense-list" id="expense-list"><div class="empty-state">支出がまだありません<br>右下の＋から登録できます</div></div>
   </div>
@@ -275,14 +296,28 @@
 
     <div class="fixed-group" id="fixed-group-husband"></div>
     <div class="fixed-group" id="fixed-group-wife"></div>
-    <!-- 今月計上ボタン -->
+    <!-- 計上ボタン -->
     <div style="background:var(--surface);border:1.5px solid var(--primary);border-radius:14px;padding:16px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:4px;">📅 今月の固定費を計上する</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">給与が入ったタイミングで押してください。今月まだ計上していない固定費が一括登録されます。</div>
-      <button onclick="postFixedExpenses()" style="width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;">
-        💴 今月分を計上する
+      <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:4px;">📅 月給分を計上する</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">給与が入ったタイミングで押してください。月給分の固定費が一括登録されます。</div>
+      <button onclick="postFixedExpenses('salary')" style="width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;">
+        💴 月給分を計上する
       </button>
-      <div id="post-fixed-status" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;min-height:16px;"></div>
+      <div id="post-fixed-status-salary" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;min-height:16px;"></div>
+    </div>
+
+    <div style="background:var(--bonus-bg);border:1.5px solid #e8c99a;border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;color:var(--bonus);margin-bottom:4px;">💰 ボーナス分を計上する</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">ボーナスが入ったタイミングで押してください。どちらのボーナスか選んで計上できます。</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="postFixedExpenses('bonus1')" style="padding:12px;background:var(--bonus);color:#fff;border:none;border-radius:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;">
+          ☀️ 夏ボーナス<br><small id="hint-bonus1-btn" style="font-weight:400;font-size:11px;">6月10日</small>
+        </button>
+        <button onclick="postFixedExpenses('bonus2')" style="padding:12px;background:var(--bonus);color:#fff;border:none;border-radius:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;">
+          ❄️ 冬ボーナス<br><small id="hint-bonus2-btn" style="font-weight:400;font-size:11px;">12月20日</small>
+        </button>
+      </div>
+      <div id="post-fixed-status-bonus" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;min-height:16px;"></div>
     </div>
 
     <button class="btn-add-income" onclick="openFixedModal(null)">＋ 固定費を追加</button>
@@ -384,7 +419,9 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
         <div style="font-size:12px;color:var(--text);line-height:2.2;">
-          <span style="color:var(--primary);font-weight:600;">v1.7.0</span>　固定費の一括計上ボタン追加（現在）<br>
+          <span style="color:var(--primary);font-weight:600;">v1.8.1</span>　日付のタイムゾーンずれ修正（現在）<br>
+          <span style="color:var(--text-muted);">v1.8.0</span>　ボーナス計上ボタン分離・ボーナス残りカード追加<br>
+          <span style="color:var(--text-muted);">v1.7.0</span>　固定費の一括計上ボタン追加<br>
           <span style="color:var(--text-muted);">v1.6.0</span>　OCR機能を削除<br>
           <span style="color:var(--text-muted);">v1.5.x</span>　OCR実装・デバッグ（廃止）<br>
           <span style="color:var(--text-muted);">v1.5.0</span>　レシートOCR機能追加<br>
@@ -650,6 +687,10 @@
     document.getElementById('hint-bonus2').textContent = b2str;
     document.getElementById('modal-bonus1').textContent = b1str;
     document.getElementById('modal-bonus2').textContent = b2str;
+    const b1btn = document.getElementById('hint-bonus1-btn');
+    const b2btn = document.getElementById('hint-bonus2-btn');
+    if (b1btn) b1btn.textContent = b1str;
+    if (b2btn) b2btn.textContent = b2str;
   }
 
   window.openPaydayModal = () => { document.getElementById('payday-input').value = payday; document.getElementById('payday-modal').classList.add('open'); };
@@ -756,6 +797,8 @@
     updateCard('husband','salary',incomes,expenses);
     updateCard('wife','salary',incomes,expenses);
     updateTotalCard(incomes,expenses);
+    updateBonusCard('husband',incomes,expenses);
+    updateBonusCard('wife',incomes,expenses);
     const sorted = [];
     expenseSnap.forEach(d => sorted.push({id:d.id,...d.data()}));
     sorted.sort((a,b) => b.date.seconds-a.date.seconds);
@@ -768,6 +811,17 @@
     const prefix=person==='husband'?'husband-salary':'wife-salary';
     document.getElementById(`${prefix}-remain`).textContent = income>0?`¥${remain.toLocaleString()}`:'¥—';
     document.getElementById(`${prefix}-sub`).textContent = income>0?`支出 ¥${expense.toLocaleString()} / 収入 ¥${income.toLocaleString()}`:'収入未登録';
+    document.getElementById(`${prefix}-bar`).style.width = `${pct}%`;
+  }
+
+  function updateBonusCard(person, incomes, expenses) {
+    const key = `${person}_bonus`;
+    const income = incomes[key]||0, expense = expenses[key]||0;
+    const remain = income - expense;
+    const pct = income > 0 ? Math.min(100, Math.round(expense/income*100)) : 0;
+    const prefix = person === 'husband' ? 'husband-bonus' : 'wife-bonus';
+    document.getElementById(`${prefix}-remain`).textContent = income>0 ? `¥${remain.toLocaleString()}` : '¥—';
+    document.getElementById(`${prefix}-sub`).textContent = income>0 ? `支出 ¥${expense.toLocaleString()} / 収入 ¥${income.toLocaleString()}` : '収入未登録';
     document.getElementById(`${prefix}-bar`).style.width = `${pct}%`;
   }
 
@@ -1014,7 +1068,9 @@
         document.getElementById('expense-category').value = d.category || '';
         document.getElementById('expense-person').value = d.person || 'husband';
         document.getElementById('expense-wallet').value = d.walletType || 'salary';
-        document.getElementById('expense-date').value = d.date.toDate().toISOString().split('T')[0];
+        const expDate = d.date.toDate();
+        const localDate = `${expDate.getFullYear()}-${String(expDate.getMonth()+1).padStart(2,'0')}-${String(expDate.getDate()).padStart(2,'0')}`;
+        document.getElementById('expense-date').value = localDate;
         document.getElementById('expense-memo').value = d.memo || '';
       }
       document.getElementById('expense-modal-actions').innerHTML = `
@@ -1026,7 +1082,8 @@
       document.getElementById('expense-amount').value = '';
       document.getElementById('expense-category').value = '';
       document.getElementById('expense-memo').value = '';
-      document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      document.getElementById('expense-date').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       document.getElementById('expense-modal-actions').innerHTML = `
         <button class="btn-secondary" onclick="closeModal('expense-modal')">キャンセル</button>
         <button class="btn-primary" style="flex:2" id="expense-save-btn" onclick="saveExpense()">登録する</button>
@@ -1177,66 +1234,82 @@
   };
 
   // ── 固定費の一括計上 ──
-  window.postFixedExpenses = async () => {
-    const status = document.getElementById('post-fixed-status');
-    const btn = document.querySelector('[onclick="postFixedExpenses()"]');
-    btn.disabled = true; btn.textContent = '計上中...';
+  window.postFixedExpenses = async (type) => {
+    // type: 'salary' | 'bonus1' | 'bonus2'
+    const isBonus = type !== 'salary';
+    const statusId = isBonus ? 'post-fixed-status-bonus' : 'post-fixed-status-salary';
+    const status = document.getElementById(statusId);
+    const btnSelector = isBonus
+      ? `[onclick="postFixedExpenses('${type}')"]`
+      : `[onclick="postFixedExpenses('salary')"]`;
+    const btn = document.querySelector(btnSelector);
+
+    btn.disabled = true;
     status.textContent = '';
 
     try {
-      const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-
-      // 今月すでに計上済みか確認（isFixed=trueの支出が存在するか）
-      const startDate = new Date(currentYear, currentMonth-2, payday);
-      const endDate = new Date(currentYear, currentMonth-1, payday);
-      const existingSnap = await getDocs(query(
-        collection(db,'kakeibo_expenses'),
-        where('isFixed','==',true),
-        where('date','>=',Timestamp.fromDate(startDate)),
-        where('date','<',Timestamp.fromDate(endDate))
-      ));
-
-      if (!existingSnap.empty) {
-        const count = existingSnap.size;
-        if (!confirm(`今月はすでに${count}件の固定費が計上されています。再度計上しますか？`)) {
-          btn.disabled = false; btn.textContent = '💴 今月分を計上する';
-          return;
-        }
-      }
-
-      // 固定費マスターを取得
+      // 固定費マスター取得
       const fixedSnap = await getDocs(collection(db,'kakeibo_fixed_expenses'));
       const fixedItems = [];
       fixedSnap.forEach(d => fixedItems.push({id:d.id,...d.data()}));
 
       if (!fixedItems.length) {
-        status.textContent = '⚠️ 固定費マスターが空です。先に固定費を登録してください。';
+        status.textContent = '⚠️ 固定費マスターが空です';
         return;
       }
 
-      // 計上対象を絞り込む
-      const targets = fixedItems.filter(d => {
-        if (d.walletType === 'bonus') {
-          // ボーナス：6月か12月の支給月のみ
-          return currentMonth === bonus1.month || currentMonth === bonus2.month;
+      let targets = [];
+      let postDate;
+
+      if (type === 'salary') {
+        // 月給分：毎月＋年1回（対象月）のみ
+        targets = fixedItems.filter(d => {
+          if (d.walletType !== 'salary') return false;
+          if (d.repeat === 'yearly') return d.targetMonth === currentMonth;
+          return d.repeat === 'monthly';
+        });
+        postDate = new Date(currentYear, currentMonth-1, payday);
+
+        // 二重計上チェック
+        const startDate = new Date(currentYear, currentMonth-2, payday);
+        const endDate = new Date(currentYear, currentMonth-1, payday);
+        const existingSnap = await getDocs(query(
+          collection(db,'kakeibo_expenses'),
+          where('isFixed','==',true),
+          where('walletType','==','salary'),
+          where('date','>=',Timestamp.fromDate(startDate)),
+          where('date','<',Timestamp.fromDate(endDate))
+        ));
+        if (!existingSnap.empty) {
+          if (!confirm(`今月はすでに${existingSnap.size}件の月給固定費が計上されています。再度計上しますか？`)) return;
         }
-        if (d.repeat === 'yearly') {
-          // 年1回：対象月のみ
-          return d.targetMonth === currentMonth;
+
+      } else {
+        // ボーナス分
+        targets = fixedItems.filter(d => d.walletType === 'bonus');
+        const bonusDate = type === 'bonus1' ? bonus1 : bonus2;
+        postDate = new Date(currentYear, bonusDate.month-1, bonusDate.day);
+
+        // 二重計上チェック（同じボーナス支給日で既に計上済みか）
+        const dayStart = new Date(postDate); dayStart.setHours(0,0,0,0);
+        const dayEnd = new Date(postDate); dayEnd.setHours(23,59,59,999);
+        const existingSnap = await getDocs(query(
+          collection(db,'kakeibo_expenses'),
+          where('isFixed','==',true),
+          where('walletType','==','bonus'),
+          where('date','>=',Timestamp.fromDate(dayStart)),
+          where('date','<=',Timestamp.fromDate(dayEnd))
+        ));
+        if (!existingSnap.empty) {
+          if (!confirm(`この支給日（${bonusDate.month}/${bonusDate.day}）はすでに${existingSnap.size}件計上されています。再度計上しますか？`)) return;
         }
-        // 毎月
-        return true;
-      });
+      }
 
       if (!targets.length) {
-        status.textContent = `⚠️ 今月（${currentMonth}月）計上対象の固定費がありません。`;
+        status.textContent = `⚠️ 計上対象の固定費がありません`;
         return;
       }
 
-      // 計上日（支給日）を設定
-      const postDate = new Date(currentYear, currentMonth-1, payday);
-
-      // 支出テーブルに一括登録
       const promises = targets.map(d => addDoc(collection(db,'kakeibo_expenses'), {
         amount: d.amount,
         category: d.category,
@@ -1249,7 +1322,7 @@
       }));
       await Promise.all(promises);
 
-      status.textContent = `✅ ${targets.length}件の固定費を計上しました`;
+      status.textContent = `✅ ${targets.length}件計上しました`;
       showToast(`✅ ${targets.length}件計上しました`);
       await loadAll();
 
@@ -1257,7 +1330,7 @@
       status.textContent = '⚠️ 計上に失敗しました';
       console.error(e);
     } finally {
-      btn.disabled = false; btn.textContent = '💴 今月分を計上する';
+      btn.disabled = false;
     }
   };
 
