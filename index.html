@@ -176,6 +176,18 @@
     .toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
     .toast.show { opacity: 1; }
     .page-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+    .analysis-tab { padding: 7px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1.5px solid var(--border); color: var(--text-muted); background: transparent; font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s; }
+    .analysis-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .cat-analysis-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+    .cat-analysis-item:last-child { border-bottom: none; }
+    .cat-analysis-info { flex: 1; min-width: 0; }
+    .cat-analysis-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .cat-analysis-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+    .cat-analysis-bar { height: 100%; border-radius: 2px; background: var(--accent); }
+    .cat-analysis-sub { font-size: 11px; color: var(--text-muted); }
+    .cat-analysis-right { text-align: right; flex-shrink: 0; }
+    .cat-analysis-amount { font-size: 14px; font-weight: 700; color: var(--text); }
+    .cat-analysis-pct { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   </style>
 </head>
@@ -197,7 +209,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.8.2</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.9.0</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -270,8 +282,48 @@
       <div class="current-month" id="current-month-label2"></div>
       <button onclick="changeMonth(1)">›</button>
     </div>
-    <div class="section-header"><h2>支出一覧</h2></div>
-    <div class="expense-list" id="expense-list-full"><div class="empty-state">支出がまだありません</div></div>
+
+    <!-- 分析タブ -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;">
+      <button class="analysis-tab active" onclick="switchAnalysisTab('summary',this)">概要</button>
+      <button class="analysis-tab" onclick="switchAnalysisTab('category',this)">費目別</button>
+      <button class="analysis-tab" onclick="switchAnalysisTab('person',this)">人別</button>
+    </div>
+
+    <!-- 概要タブ -->
+    <div id="analysis-summary">
+      <div class="section-header"><h2>夫・妻それぞれの支出</h2></div>
+      <div class="summary-cards" style="margin-bottom:20px;">
+        <div class="summary-card">
+          <div class="card-person">👔 夫</div>
+          <div class="card-label">支出合計</div>
+          <div class="card-amount" id="analysis-husband-total">¥—</div>
+          <div class="card-sub" id="analysis-husband-pct">収入比 —%</div>
+          <div class="progress-bar"><div class="fill" id="analysis-husband-bar" style="width:0%"></div></div>
+        </div>
+        <div class="summary-card">
+          <div class="card-person">👗 妻</div>
+          <div class="card-label">支出合計</div>
+          <div class="card-amount" id="analysis-wife-total">¥—</div>
+          <div class="card-sub" id="analysis-wife-pct">収入比 —%</div>
+          <div class="progress-bar"><div class="fill" id="analysis-wife-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="section-header"><h2>費目トップ5</h2></div>
+      <div class="expense-list" id="analysis-top5"><div class="empty-state">支出がまだありません</div></div>
+    </div>
+
+    <!-- 費目別タブ -->
+    <div id="analysis-category" style="display:none">
+      <div class="section-header"><h2>費目別 一覧</h2></div>
+      <div class="expense-list" id="analysis-cat-list"><div class="empty-state">支出がまだありません</div></div>
+    </div>
+
+    <!-- 人別タブ -->
+    <div id="analysis-person" style="display:none">
+      <div id="analysis-person-husband" style="margin-bottom:20px;"></div>
+      <div id="analysis-person-wife"></div>
+    </div>
   </div>
 
   <!-- 収入 -->
@@ -419,7 +471,8 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
         <div style="font-size:12px;color:var(--text);line-height:2.2;">
-          <span style="color:var(--primary);font-weight:600;">v1.8.2</span>　起動時の表示月を25日締めサイクルに自動対応（現在）<br>
+          <span style="color:var(--primary);font-weight:600;">v1.9.0</span>　支出タブに概要・費目別・人別の分析ビュー追加（現在）<br>
+          <span style="color:var(--text-muted);">v1.9.0</span>　起動時の表示月を25日締めサイクルに自動対応<br>
           <span style="color:var(--text-muted);">v1.8.1</span>　日付のタイムゾーンずれ修正<br>
           <span style="color:var(--text-muted);">v1.8.0</span>　ボーナス計上ボタン分離・ボーナス残りカード追加<br>
           <span style="color:var(--text-muted);">v1.7.0</span>　固定費の一括計上ボタン追加<br>
@@ -875,10 +928,123 @@
   async function loadAllExpenses() {
     const startDate = new Date(currentYear, currentMonth-2, payday);
     const endDate = new Date(currentYear, currentMonth-1, payday);
-    const snap=await getDocs(query(collection(db,'kakeibo_expenses'),where('date','>=',Timestamp.fromDate(startDate)),where('date','<',Timestamp.fromDate(endDate)),orderBy('date','desc')));
-    const items=[]; snap.forEach(d=>items.push({id:d.id,...d.data()}));
-    renderExpenseList('expense-list-full',items);
+    const snap = await getDocs(query(collection(db,'kakeibo_expenses'),where('date','>=',Timestamp.fromDate(startDate)),where('date','<',Timestamp.fromDate(endDate)),orderBy('date','desc')));
+    const items = [];
+    snap.forEach(d => items.push({id:d.id,...d.data()}));
+
+    // 収入取得（収入比計算用）
+    const yearMonth = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+    const incomeSnap = await getDocs(query(collection(db,'kakeibo_incomes'), where('yearMonth','==',yearMonth)));
+    const incomes = {};
+    incomeSnap.forEach(d => {
+      const data = d.data();
+      if (!incomes[data.person]) incomes[data.person] = 0;
+      if (data.walletType === 'salary') incomes[data.person] += data.amount;
+    });
+
+    renderAnalysisSummary(items, incomes);
+    renderAnalysisCategory(items);
+    renderAnalysisPerson(items);
   }
+
+  function renderAnalysisSummary(items, incomes) {
+    const husbandTotal = items.filter(d=>d.person==='husband').reduce((a,b)=>a+b.amount,0);
+    const wifeTotal = items.filter(d=>d.person==='wife').reduce((a,b)=>a+b.amount,0);
+    const hIncome = incomes['husband']||0;
+    const wIncome = incomes['wife']||0;
+    document.getElementById('analysis-husband-total').textContent = `¥${husbandTotal.toLocaleString()}`;
+    document.getElementById('analysis-wife-total').textContent = `¥${wifeTotal.toLocaleString()}`;
+    document.getElementById('analysis-husband-pct').textContent = hIncome>0 ? `収入比 ${Math.round(husbandTotal/hIncome*100)}%` : '収入未登録';
+    document.getElementById('analysis-wife-pct').textContent = wIncome>0 ? `収入比 ${Math.round(wifeTotal/wIncome*100)}%` : '収入未登録';
+    document.getElementById('analysis-husband-bar').style.width = hIncome>0 ? `${Math.min(100,Math.round(husbandTotal/hIncome*100))}%` : '0%';
+    document.getElementById('analysis-wife-bar').style.width = wIncome>0 ? `${Math.min(100,Math.round(wifeTotal/wIncome*100))}%` : '0%';
+    const catMap = {};
+    items.forEach(d => { catMap[d.category] = (catMap[d.category]||0) + d.amount; });
+    const sorted = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const total = items.reduce((a,b)=>a+b.amount,0);
+    const maxAmt = sorted[0]?.[1] || 1;
+    const top5El = document.getElementById('analysis-top5');
+    if (!sorted.length) { top5El.innerHTML = '<div class="empty-state">支出がまだありません</div>'; return; }
+    top5El.innerHTML = sorted.map(([cat, amt]) => `
+      <div class="cat-analysis-item">
+        <div class="cat-analysis-info">
+          <div class="cat-analysis-name">${cat}</div>
+          <div class="cat-analysis-bar-wrap"><div class="cat-analysis-bar" style="width:${Math.round(amt/maxAmt*100)}%"></div></div>
+        </div>
+        <div class="cat-analysis-right">
+          <div class="cat-analysis-amount">¥${amt.toLocaleString()}</div>
+          <div class="cat-analysis-pct">${Math.round(amt/total*100)}%</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAnalysisCategory(items) {
+    const catMap = {};
+    items.forEach(d => {
+      if (!catMap[d.category]) catMap[d.category] = { total:0, husband:0, wife:0 };
+      catMap[d.category].total += d.amount;
+      catMap[d.category][d.person] += d.amount;
+    });
+    const sorted = Object.entries(catMap).sort((a,b)=>b[1].total-a[1].total);
+    const total = items.reduce((a,b)=>a+b.amount,0);
+    const maxAmt = sorted[0]?.[1].total || 1;
+    const el = document.getElementById('analysis-cat-list');
+    if (!sorted.length) { el.innerHTML = '<div class="empty-state">支出がまだありません</div>'; return; }
+    el.innerHTML = sorted.map(([cat, v]) => `
+      <div class="cat-analysis-item">
+        <div class="cat-analysis-info">
+          <div class="cat-analysis-name">${cat}</div>
+          <div class="cat-analysis-bar-wrap"><div class="cat-analysis-bar" style="width:${Math.round(v.total/maxAmt*100)}%"></div></div>
+          <div class="cat-analysis-sub">夫 ¥${v.husband.toLocaleString()} / 妻 ¥${v.wife.toLocaleString()}</div>
+        </div>
+        <div class="cat-analysis-right">
+          <div class="cat-analysis-amount">¥${v.total.toLocaleString()}</div>
+          <div class="cat-analysis-pct">${Math.round(v.total/total*100)}%</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAnalysisPerson(items) {
+    ['husband','wife'].forEach(person => {
+      const personItems = items.filter(d=>d.person===person);
+      const personTotal = personItems.reduce((a,b)=>a+b.amount,0);
+      const label = person==='husband'?'👔 夫':'👗 妻';
+      const el = document.getElementById(`analysis-person-${person}`);
+      if (!personItems.length) { el.innerHTML = ''; return; }
+      el.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 4px;">
+          <span style="font-size:12px;font-weight:500;color:var(--primary);">${label}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--text);">合計 ¥${personTotal.toLocaleString()}</span>
+        </div>
+        <div class="expense-list" style="margin-bottom:16px">
+          ${personItems.map(d => {
+            const date = d.date.toDate();
+            const walletLabel = d.walletType==='salary'?'月給':'ボーナス';
+            return `<div class="expense-item" onclick="openExpenseModal('${d.id}')">
+              <div class="expense-category-dot"></div>
+              <div class="expense-info">
+                <div class="expense-category">${d.category}${d.isFixed?'　<span style="font-size:10px;color:var(--text-muted)">🔁固定</span>':''}</div>
+                <div class="expense-meta">${date.getMonth()+1}/${date.getDate()} · ${walletLabel}${d.memo?' · '+d.memo:''}</div>
+              </div>
+              <div class="expense-amount">¥${d.amount.toLocaleString()}</div>
+              <div class="expense-chevron">›</div>
+            </div>`;
+          }).join('')}
+        </div>
+      `;
+    });
+  }
+
+  window.switchAnalysisTab = (tab, el) => {
+    document.querySelectorAll('.analysis-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    ['summary','category','person'].forEach(t => {
+      document.getElementById(`analysis-${t}`).style.display = t===tab ? 'block' : 'none';
+    });
+  };
+
 
   async function loadIncomes() {
     const yearMonth=`${currentYear}-${String(currentMonth).padStart(2,'0')}`;
