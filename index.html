@@ -209,7 +209,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.9.0</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.11.2</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -406,6 +406,22 @@
     </div>
 
     <div class="export-card">
+      <h3>💾 バックアップ・リストア</h3>
+      <p>全データをJSONファイルとして保存・復元できます。誤削除時の復旧や機種変更時に使えます。</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <button class="btn-export" onclick="exportBackup()">📦 全データをバックアップ（JSON）</button>
+        <div style="position:relative;">
+          <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="importBackup(event)">
+          <button class="btn-export secondary" onclick="document.getElementById('restore-file-input').click()">📂 バックアップから復元</button>
+        </div>
+      </div>
+      <div id="restore-status" style="font-size:12px;color:var(--text-muted);text-align:center;min-height:16px;"></div>
+      <div style="font-size:11px;color:var(--text-muted);background:var(--bg);border-radius:8px;padding:10px;margin-top:8px;line-height:1.8;">
+        ⚠️ 復元すると既存データは全て削除され、バックアップの内容に上書きされます。この操作は取り消せません。
+      </div>
+    </div>
+
+    <div class="export-card">
       <h3>🤖 Claudeへの分析プロンプト例</h3>
       <p>CSVをコピーしたあと、以下のようなプロンプトをClaudeに送ると分析してもらえます。</p>
       <div class="prompt-box">
@@ -452,6 +468,18 @@
         <button class="settings-value" id="bonus2-display" onclick="openBonusModal(2)">12月20日</button>
       </div>
     </div>
+    <div class="settings-section-title">費目管理</div>
+    <div class="settings-section">
+      <div style="padding:16px;">
+        <div id="category-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-category-input" placeholder="新しい費目名" style="flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);outline:none;">
+          <button onclick="addCategory()" style="padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;">追加</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">費目をタップすると削除できます</div>
+      </div>
+    </div>
+
     <div class="settings-section-title">アカウント</div>
     <div class="settings-section">
       <div class="settings-row">
@@ -471,7 +499,10 @@
       <div style="padding:16px">
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.05em;">🏷️ バージョン履歴</div>
         <div style="font-size:12px;color:var(--text);line-height:2.2;">
-          <span style="color:var(--primary);font-weight:600;">v1.9.0</span>　支出タブに概要・費目別・人別の分析ビュー追加（現在）<br>
+          <span style="color:var(--primary);font-weight:600;">v1.11.1</span>　リストアを上書き方式に変更（現在）<br>
+          <span style="color:var(--text-muted);">v1.11.1</span>　バックアップ・リストア機能追加<br>
+          <span style="color:var(--text-muted);">v1.10.0</span>　設定画面から費目の追加・削除が可能に<br>
+          <span style="color:var(--text-muted);">v1.9.0</span>　支出タブに概要・費目別・人別の分析ビュー追加<br>
           <span style="color:var(--text-muted);">v1.9.0</span>　起動時の表示月を25日締めサイクルに自動対応<br>
           <span style="color:var(--text-muted);">v1.8.1</span>　日付のタイムゾーンずれ修正<br>
           <span style="color:var(--text-muted);">v1.8.0</span>　ボーナス計上ボタン分離・ボーナス残りカード追加<br>
@@ -679,7 +710,62 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const CATEGORIES = ["食費","外食","日用品","交通費","医療費","趣味","悠グッズ","モココグッズ","美容代","自宅改善","小遣い","ふるさと納税","特別出費","保険料","衣服","レジャー","教育費","住居費","通信費","貯蓄","光熱費","車維持費","帰省費"];
+  // デフォルト費目（初回起動時にFirestoreへ保存）
+  const DEFAULT_CATEGORIES = ["食費","外食","日用品","交通費","医療費","趣味","悠グッズ","モココグッズ","美容代","自宅改善","小遣い","ふるさと納税","特別出費","保険料","衣服","レジャー","教育費","住居費","通信費","貯蓄","光熱費","車維持費","帰省費"];
+  let CATEGORIES = [...DEFAULT_CATEGORIES];
+
+  // Firestoreから費目を読み込む
+  async function loadCategories() {
+    try {
+      const snap = await getDoc(doc(db,'kakeibo_settings','categories'));
+      if (snap.exists() && snap.data().list?.length) {
+        CATEGORIES = snap.data().list;
+      } else {
+        // 初回：デフォルトを保存
+        await setDoc(doc(db,'kakeibo_settings','categories'), { list: DEFAULT_CATEGORIES });
+        CATEGORIES = [...DEFAULT_CATEGORIES];
+      }
+    } catch(e) { CATEGORIES = [...DEFAULT_CATEGORIES]; }
+    initCategorySelects();
+    renderCategorySettings();
+  }
+
+  async function saveCategories() {
+    await setDoc(doc(db,'kakeibo_settings','categories'), { list: CATEGORIES });
+    initCategorySelects();
+    renderCategorySettings();
+  }
+
+  function renderCategorySettings() {
+    const el = document.getElementById('category-list');
+    if (!el) return;
+    el.innerHTML = CATEGORIES.map(c => `
+      <span onclick="removeCategory('${c}')" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;color:var(--text);transition:all 0.2s;"
+        onmouseover="this.style.borderColor='var(--error)';this.style.color='var(--error)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+        ${c} <span style="font-size:14px;line-height:1;">×</span>
+      </span>
+    `).join('');
+  }
+
+  window.addCategory = async () => {
+    const input = document.getElementById('new-category-input');
+    const name = input.value.trim();
+    if (!name) { showToast('費目名を入力してください'); return; }
+    if (CATEGORIES.includes(name)) { showToast('すでに存在する費目です'); return; }
+    CATEGORIES.push(name);
+    await saveCategories();
+    input.value = '';
+    showToast(`✅ 「${name}」を追加しました`);
+  };
+
+  window.removeCategory = async (name) => {
+    if (!confirm(`「${name}」を削除しますか？
+※過去の支出データには影響しません`)) return;
+    CATEGORIES = CATEGORIES.filter(c => c !== name);
+    await saveCategories();
+    showToast(`削除しました`);
+  };
 
   // 25日締めサイクルに基づいて初期表示月を決定
   // 今日が支給日(payday)以降なら翌月を表示
@@ -706,6 +792,7 @@
       updateMonthLabels();
       initExportDates();
       await loadSettings();
+      await loadCategories();
       await loadAll();
     } else {
       document.getElementById('login-screen').style.display = 'flex';
@@ -1234,6 +1321,153 @@
     } catch(e) { showToast('出力に失敗しました'); console.error(e); }
   };
 
+  // ── バックアップ・リストア ──
+  window.exportBackup = async () => {
+    showToast('バックアップを作成中...');
+    try {
+      const [expSnap, incSnap, fixSnap, setSnap, catSnap] = await Promise.all([
+        getDocs(collection(db,'kakeibo_expenses')),
+        getDocs(collection(db,'kakeibo_incomes')),
+        getDocs(collection(db,'kakeibo_fixed_expenses')),
+        getDoc(doc(db,'kakeibo_settings','general')),
+        getDoc(doc(db,'kakeibo_settings','categories'))
+      ]);
+
+      const toObj = (snap) => {
+        const arr = [];
+        snap.forEach(d => {
+          const data = d.data();
+          // TimestampをISO文字列に変換
+          const converted = {};
+          for (const [k,v] of Object.entries(data)) {
+            converted[k] = v?.toDate ? v.toDate().toISOString() : v;
+          }
+          arr.push({ _id: d.id, ...converted });
+        });
+        return arr;
+      };
+
+      const backup = {
+        _version: '1.0',
+        _createdAt: new Date().toISOString(),
+        _description: 'Kakeibo App Backup',
+        expenses: toObj(expSnap),
+        incomes: toObj(incSnap),
+        fixed_expenses: toObj(fixSnap),
+        settings: setSnap.exists() ? setSnap.data() : {},
+        categories: catSnap.exists() ? catSnap.data() : {}
+      };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      a.download = `kakeibo_backup_${dateStr}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`✅ バックアップ完了（支出${backup.expenses.length}件・収入${backup.incomes.length}件・固定費${backup.fixed_expenses.length}件・費目${backup.categories?.list?.length||0}件）`);
+    } catch(e) {
+      showToast('⚠️ バックアップに失敗しました');
+      console.error(e);
+    }
+  };
+
+  window.importBackup = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const status = document.getElementById('restore-status');
+    status.textContent = '読み込み中...';
+
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+
+      if (!backup._version || !backup.expenses) {
+        status.textContent = '⚠️ 有効なバックアップファイルではありません';
+        return;
+      }
+
+      const expCount = backup.expenses?.length || 0;
+      const incCount = backup.incomes?.length || 0;
+      const fixCount = backup.fixed_expenses?.length || 0;
+
+      if (!confirm(`⚠️ 上書き復元を実行します。\n\n支出：${expCount}件\n収入：${incCount}件\n固定費：${fixCount}件\n\n既存データはすべて削除されます。\nこの操作は取り消せません。続けますか？`)) {
+        status.textContent = '';
+        document.getElementById('restore-file-input').value = '';
+        return;
+      }
+
+      // STEP1: 自動バックアップ
+      status.textContent = 'STEP1/3：現在のデータを自動バックアップ中...';
+      await exportBackup();
+
+      // STEP2: 既存データを全削除
+      status.textContent = 'STEP2/3：既存データを削除中...';
+
+      // 既存データを全削除
+      const deleteAll = async (collectionName) => {
+        const snap = await getDocs(collection(db, collectionName));
+        const deletes = [];
+        snap.forEach(d => deletes.push(deleteDoc(doc(db, collectionName, d.id))));
+        await Promise.all(deletes);
+      };
+      await Promise.all([
+        deleteAll('kakeibo_expenses'),
+        deleteAll('kakeibo_incomes'),
+        deleteAll('kakeibo_fixed_expenses')
+      ]);
+
+      status.textContent = 'STEP3/3：データを復元中...';
+
+      const toTimestamp = (data) => {
+        const converted = {};
+        for (const [k,v] of Object.entries(data)) {
+          if (k === '_id') continue;
+          if (typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}T/)) {
+            converted[k] = Timestamp.fromDate(new Date(v));
+          } else {
+            converted[k] = v;
+          }
+        }
+        return converted;
+      };
+
+      const promises = [];
+      for (const item of (backup.expenses || [])) {
+        promises.push(addDoc(collection(db,'kakeibo_expenses'), toTimestamp(item)));
+      }
+      for (const item of (backup.incomes || [])) {
+        promises.push(addDoc(collection(db,'kakeibo_incomes'), toTimestamp(item)));
+      }
+      for (const item of (backup.fixed_expenses || [])) {
+        promises.push(addDoc(collection(db,'kakeibo_fixed_expenses'), toTimestamp(item)));
+      }
+      await Promise.all(promises);
+
+      // 設定・費目も上書き
+      if (backup.settings && Object.keys(backup.settings).length) {
+        await setDoc(doc(db,'kakeibo_settings','general'), backup.settings);
+      }
+      if (backup.categories?.list?.length) {
+        await setDoc(doc(db,'kakeibo_settings','categories'), backup.categories);
+        CATEGORIES = backup.categories.list;
+        initCategorySelects();
+        renderCategorySettings();
+      }
+
+      status.textContent = `✅ 復元完了（支出${expCount}件・収入${incCount}件・固定費${fixCount}件）`;
+      showToast('✅ 復元が完了しました');
+      await loadAll();
+
+    } catch(e) {
+      status.textContent = '⚠️ 復元に失敗しました。ファイルを確認してください。';
+      console.error(e);
+    } finally {
+      document.getElementById('restore-file-input').value = '';
+    }
+  };
+
   window.copyPrompt = () => {
     const text = `以下は我が家の家計データです（夫婦2人）。
 支出者（husband/wife）と財布区分（salary/bonus）ごとに管理しています。
@@ -1538,6 +1772,9 @@
     el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
   });
   document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') window.handleLogin(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.activeElement.id === 'new-category-input') window.addCategory();
+  });
 </script>
 </body>
 </html>
