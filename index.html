@@ -209,7 +209,7 @@
 
 <div id="app-screen">
   <header class="app-header">
-    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.11.2</span></h1>
+    <h1>🌿 Kakeibo <span style="font-size:11px;font-weight:400;color:var(--text-muted);font-family:'Noto Sans JP',sans-serif;">v1.11.3</span></h1>
     <div class="header-right">
       <span class="user-badge" id="user-badge"></span>
       <button class="btn-icon" onclick="showTab('settings', document.querySelector('.nav-item:last-child'))">⚙️</button>
@@ -1236,8 +1236,9 @@
 
     const [fy, fm] = fromStr.split('-').map(Number);
     const [ty, tm] = toStr.split('-').map(Number);
-    const startDate = new Date(fy, fm-1, 1);
-    const endDate = new Date(ty, tm, 1);
+    // 25日締めサイクル：開始月の前月25日〜終了月の24日
+    const startDate = new Date(fy, fm-2, payday);
+    const endDate = new Date(ty, tm-1, payday);
 
     showToast('データを取得中...');
     try {
@@ -1314,7 +1315,14 @@
       const a = document.createElement('a');
       a.href = url;
       const label = type === 'expenses' ? '支出' : type === 'incomes' ? '収入' : '家計簿';
-      a.download = `kakeibo_${label}_${fromStr}_${toStr}.csv`;
+      // ファイル名：期間を25日締めサイクルで表示
+      const [sfy, sfm] = fromStr.split('-').map(Number);
+      const [sty, stm] = toStr.split('-').map(Number);
+      const cycleFrom = sfm === 1
+        ? `${sfy-1}-12-${payday}`
+        : `${sfy}-${String(sfm-1).padStart(2,'0')}-${payday}`;
+      const cycleTo = `${sty}-${String(stm).padStart(2,'0')}-24`;
+      a.download = `kakeibo_${label}_${cycleFrom}_${cycleTo}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('✅ ダウンロードしました');
